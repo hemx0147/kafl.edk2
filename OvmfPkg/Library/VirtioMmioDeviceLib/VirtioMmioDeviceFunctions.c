@@ -261,6 +261,15 @@ VirtioMmioDeviceRead (
   UINTN                     SrcBaseAddress;
   VIRTIO_MMIO_DEVICE       *Device;
 
+  DEBUG ((DEBUG_INFO,
+    "VirtioMmioDeviceRead: DeviceProtocol: %p, FieldOffset: %d, FieldSize: %d, BufSize: %d, Buf: %p\n",
+    This,
+    FieldOffset,
+    FieldSize,
+    BufferSize,
+    Buffer
+  ));
+
   Device = VIRTIO_MMIO_DEVICE_FROM_VIRTIO_DEVICE (This);
 
   //

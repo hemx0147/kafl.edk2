@@ -51,6 +51,15 @@ VirtioPciDeviceRead (
 {
   VIRTIO_PCI_DEVICE         *Dev;
 
+  DEBUG ((DEBUG_INFO,
+    "VirtioPciDeviceRead: DeviceProtocol: %p, FieldOffset: %d, FieldSize: %d, BufSize: %d, Buf: %p\n",
+    This,
+    FieldOffset,
+    FieldSize,
+    BufferSize,
+    Buffer
+  ));
+
   Dev = VIRTIO_PCI_DEVICE_FROM_VIRTIO_DEVICE (This);
 
   return VirtioPciIoRead (Dev,

@@ -78,6 +78,15 @@ VirtioPciIoRead (
   EFI_PCI_IO_PROTOCOL_WIDTH Width;
   EFI_PCI_IO_PROTOCOL       *PciIo;
 
+  DEBUG ((DEBUG_INFO,
+    "VirtioPciIoRead: Device: %p, FieldOffset: %d, FieldSize: %d, BufSize: %d, Buf: %p\n",
+    Dev,
+    FieldOffset,
+    FieldSize,
+    BufferSize,
+    Buffer
+  ));
+
   ASSERT (FieldSize == BufferSize);
 
   PciIo = Dev->PciIo;
