@@ -1303,6 +1303,10 @@ BmGetNextLoadOptionBuffer (
     if (CurFullPath == NULL) {
       break;
     }
+    //
+    // FileBuffer is allocated (according to PE header info?) and filled with content (i.e. OS loader image).
+    // content can be loaded from a firmware volume, from a file system interface, or from the load file interface.
+    //
     FileBuffer = GetFileBufferByFilePath (TRUE, CurFullPath, &LocalFileSize, &AuthenticationStatus);
     if ((FileBuffer != NULL) && !BmIsLoadOptionPeHeaderValid (Type, FileBuffer, LocalFileSize)) {
       //

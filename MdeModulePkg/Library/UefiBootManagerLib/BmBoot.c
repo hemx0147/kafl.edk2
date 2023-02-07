@@ -1882,7 +1882,7 @@ EfiBootManagerBoot (
     // returns address & size of the buffer that holds the PE image (i.e. OS loader).
     //? is this load performed via virtio?
     //
-    DEBUG ((DEBUG_INFO, "[Bds] %a:%d:%a filling FileBuffer\n", __FILE__, __LINE__, __FUNCTION__));
+    DEBUG ((DEBUG_INFO, "%a:%d:%a filling FileBuffer\n", __FILE__, __LINE__, __FUNCTION__));
     FileBuffer = BmGetNextLoadOptionBuffer (LoadOptionTypeBoot, BootOption->FilePath, &FilePath, &FileSize);
     if (FileBuffer != NULL) {
       RamDiskDevicePath = BmGetRamDiskDevicePath (FilePath);
@@ -1894,7 +1894,7 @@ EfiBootManagerBoot (
       //  -> VirtIO is not used. See description of gBS->LoadImage() in UEFI spec.
       //  -> OS loader code was loaded into memory before (via BmGetNextLoadOptionBuffer() above)
       //
-      DEBUG ((DEBUG_INFO, "[Bds] %a:%d:%a loading image (LoadImage())\n", __FILE__, __LINE__, __FUNCTION__));
+      DEBUG ((DEBUG_INFO, "%a:%d:%a loading image (LoadImage())\n", __FILE__, __LINE__, __FUNCTION__));
       REPORT_STATUS_CODE (EFI_PROGRESS_CODE, PcdGet32 (PcdProgressCodeOsLoaderLoad));
       Status = gBS->LoadImage (
                       TRUE,
