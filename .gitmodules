@@ -2,21 +2,28 @@
 [submodule "CryptoPkg/Library/OpensslLib/openssl"]
 	path = CryptoPkg/Library/OpensslLib/openssl
 	url = https://github.com/openssl/openssl
+	ignore = dirty
 [submodule "ArmPkg/Library/ArmSoftFloatLib/berkeley-softfloat-3"]
 	path = ArmPkg/Library/ArmSoftFloatLib/berkeley-softfloat-3
 	url = https://github.com/ucb-bar/berkeley-softfloat-3.git
+	ignore = dirty
 [submodule "UnitTestFrameworkPkg/Library/CmockaLib/cmocka"]
 	path = UnitTestFrameworkPkg/Library/CmockaLib/cmocka
 	url = https://git.cryptomilk.org/projects/cmocka.git
+	ignore = dirty
 [submodule "MdeModulePkg/Universal/RegularExpressionDxe/oniguruma"]
 	path = MdeModulePkg/Universal/RegularExpressionDxe/oniguruma
 	url = https://github.com/kkos/oniguruma
+	ignore = dirty
 [submodule "MdeModulePkg/Library/BrotliCustomDecompressLib/brotli"]
 	path = MdeModulePkg/Library/BrotliCustomDecompressLib/brotli
 	url = https://github.com/google/brotli
+	ignore = dirty
 [submodule "BaseTools/Source/C/BrotliCompress/brotli"]
 	path = BaseTools/Source/C/BrotliCompress/brotli
 	url = https://github.com/google/brotli
+	ignore = dirty
 [submodule "RedfishPkg/Library/JsonLib/jansson"]
 	path = RedfishPkg/Library/JsonLib/jansson
 	url = https://github.com/akheron/jansson
+	ignore = dirty
