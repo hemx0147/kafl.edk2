@@ -42,7 +42,14 @@ TryRunningQemuKernel (
   //
   // Start the image.
   //
-  Status = QemuStartKernelImage (&KernelImageHandle);
+  DEBUG ((DEBUG_INFO, "%a:%d:%a kAFL: prevent kernel image from being started for TDVF fuzzing\n", __FILE__, __LINE__, __FUNCTION__));
+
+  //
+  // kAFL: abort execution here as we do not need to start the linux kernel for TDVF fuzzing
+  //
+  // Status = QemuStartKernelImage (&KernelImageHandle);
+  Status = EFI_ABORTED;
+
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: QemuStartKernelImage(): %r\n", __FUNCTION__,
       Status));
