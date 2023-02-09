@@ -1829,6 +1829,7 @@ EfiBootManagerBoot (
   // 3. Signal the EVT_SIGNAL_READY_TO_BOOT event when we are about to load and execute
   //    the boot option.
   //
+  DEBUG ((EFI_D_INFO, "[Bds] 3. signal READY_TO_BOOT event\n"));
   if (BmIsBootManagerMenuFilePath (BootOption->FilePath)) {
     DEBUG ((EFI_D_INFO, "[Bds] Booting Boot Manager Menu.\n"));
     BmStopHotkeyService (NULL, NULL);
@@ -1841,6 +1842,7 @@ EfiBootManagerBoot (
     //
     // 4. Repair system through DriverHealth protocol
     //
+    DEBUG ((EFI_D_INFO, "[Bds] 4. Repair system through DriverHealth protocol\n"));
     BmRepairAllControllers (0);
   }
 
@@ -1850,6 +1852,7 @@ EfiBootManagerBoot (
   // 5. Adjust the different type memory page number just before booting
   //    and save the updated info into the variable for next boot to use
   //
+  DEBUG ((EFI_D_INFO, "[Bds] 5. Adjust different memory type page numbers before booting\n"));
   BmSetMemoryTypeInformationVariable (
     (BOOLEAN) ((BootOption->Attributes & LOAD_OPTION_CATEGORY) == LOAD_OPTION_CATEGORY_BOOT)
   );
@@ -1857,6 +1860,7 @@ EfiBootManagerBoot (
   //
   // 6. Load EFI boot option to ImageHandle
   //
+  DEBUG ((EFI_D_INFO, "[Bds] 6. Load EFI boot option to ImageHandle\n"));
   DEBUG_CODE_BEGIN ();
   if (BootOption->Description == NULL) {
     DEBUG ((DEBUG_INFO | DEBUG_LOAD, "[Bds]Booting from unknown device path\n"));
@@ -1871,10 +1875,26 @@ EfiBootManagerBoot (
     Status   = EFI_NOT_FOUND;
     FilePath = NULL;
     EfiBootManagerConnectDevicePath (BootOption->FilePath, NULL);
+    //
+    // Allocation & filling of FileBuffer.
+    // BmGetNextLoadOptionBuffer() allocates a buffer for a load option image (according to PE header?),
+    // fills it with the PE image content (i.e. OS loader image) at the BootOption's FilePath and
+    // returns address & size of the buffer that holds the PE image (i.e. OS loader).
+    //? is this load performed via virtio?
+    //
+    DEBUG ((DEBUG_INFO, "[Bds] %a:%d:%a filling FileBuffer\n", __FILE__, __LINE__, __FUNCTION__));
     FileBuffer = BmGetNextLoadOptionBuffer (LoadOptionTypeBoot, BootOption->FilePath, &FilePath, &FileSize);
     if (FileBuffer != NULL) {
       RamDiskDevicePath = BmGetRamDiskDevicePath (FilePath);
 
+      //
+      // Code that loads OS loader as image from memory.
+      // FileBuffer (i.e. SourceBuffer) is not NULL
+      //  -> it is a memory-to-memory load (i.e. the image already exists somewhere in memory)
+      //  -> VirtIO is not used. See description of gBS->LoadImage() in UEFI spec.
+      //  -> OS loader code was loaded into memory before (via BmGetNextLoadOptionBuffer() above)
+      //
+      DEBUG ((DEBUG_INFO, "[Bds] %a:%d:%a loading image (LoadImage())\n", __FILE__, __LINE__, __FUNCTION__));
       REPORT_STATUS_CODE (EFI_PROGRESS_CODE, PcdGet32 (PcdProgressCodeOsLoaderLoad));
       Status = gBS->LoadImage (
                       TRUE,
@@ -1979,7 +1999,10 @@ EfiBootManagerBoot (
 
   REPORT_STATUS_CODE (EFI_PROGRESS_CODE, PcdGet32 (PcdProgressCodeOsLoaderStart));
 
-  Status = gBS->StartImage (ImageHandle, &BootOption->ExitDataSize, &BootOption->ExitData);
+
+  DEBUG ((DEBUG_INFO, "Prevent image of BootOption '%s' (Boot%04X) from starting\n", BootOption->Description, BootOption->OptionNumber));
+  Status = EFI_NOT_FOUND;
+  // Status = gBS->StartImage (ImageHandle, &BootOption->ExitDataSize, &BootOption->ExitData);
   DEBUG ((DEBUG_INFO | DEBUG_LOAD, "Image Return Status = %r\n", Status));
   BootOption->Status = Status;
 

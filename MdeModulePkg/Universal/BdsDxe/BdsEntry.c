@@ -902,8 +902,15 @@ BdsEntry (
   // > Special boot: e.g.: USB boot, enter UI
   //
   PERF_INMODULE_BEGIN("PlatformBootManagerAfterConsole");
+  DEBUG ((DEBUG_INFO, "[Bds] %a:%d: %a calling PlatformBootManagerAfterConsole()\n", __FILE__, __LINE__, __FUNCTION__));
   PlatformBootManagerAfterConsole ();
   PERF_INMODULE_END("PlatformBootManagerAfterConsole");
+
+  //
+  // This code is not reached anymore if a kernel image could be booted
+  //
+  DEBUG ((DEBUG_INFO, "[Bds] %a:%d: %a Code after PlatformBootManagerAfterConsole\n", __FILE__, __LINE__, __FUNCTION__));
+
 
   //
   // If any component set PcdTestKeyUsed to TRUE because use of a test key
@@ -980,6 +987,7 @@ BdsEntry (
     ASSERT_EFI_ERROR (Status);
   }
 
+  DEBUG ((DEBUG_INFO, "%a:%d:%a launching Boot Manager Menu\n", __FILE__, __LINE__, __FUNCTION__));
   //
   // Launch Boot Manager Menu directly when EFI_OS_INDICATIONS_BOOT_TO_FW_UI is set. Skip HotkeyBoot
   //
@@ -994,6 +1002,7 @@ BdsEntry (
     //
     // Directly enter the setup page.
     //
+    DEBUG ((DEBUG_INFO, "%a:%d:%a directly entering setup page\n", __FILE__, __LINE__, __FUNCTION__));
     EfiBootManagerBoot (&BootManagerMenu);
   }
 
@@ -1064,6 +1073,7 @@ BdsEntry (
     } while (BootSuccess);
   }
 
+  DEBUG ((DEBUG_INFO, "%a:%d:%a free LoadOptions\n", __FILE__, __LINE__, __FUNCTION__));
   if (BootManagerMenuStatus != EFI_NOT_FOUND) {
     EfiBootManagerFreeLoadOption (&BootManagerMenu);
   }

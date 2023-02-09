@@ -323,6 +323,8 @@ QemuStartLegacyImage (
   EFI_STATUS                    Status;
   OVMF_LOADED_X86_LINUX_KERNEL  *LoadedImage;
 
+  DEBUG ((DEBUG_INFO, "%a:%d: %a is called\n", __FILE__, __LINE__, __FUNCTION__));
+
   Status = gBS->OpenProtocol (
                   ImageHandle,
                   &gOvmfLoadedX86LinuxKernelProtocolGuid,
@@ -402,7 +404,7 @@ QemuLoadKernelImage (
   //
   CommandLine = NULL;
 
-  DEBUG ((DEBUG_INFO, "%a is called.\n"));
+  DEBUG ((DEBUG_INFO, "%a:%d: %a x86 version is called.\n", __FILE__, __LINE__, __FUNCTION__));
   //
   // Load the image. This should call back into the QEMU EFI loader file system.
   //
@@ -590,6 +592,8 @@ QemuStartKernelImage (
 {
   EFI_STATUS                    Status;
   OVMF_LOADED_X86_LINUX_KERNEL  *LoadedImage;
+
+  DEBUG ((DEBUG_INFO, "%a:%d: %a is called\n", __FILE__, __LINE__, __FUNCTION__));
 
   Status = gBS->OpenProtocol (
                   *ImageHandle,
