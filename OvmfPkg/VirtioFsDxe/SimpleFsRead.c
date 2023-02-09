@@ -423,6 +423,8 @@ VirtioFsSimpleFileRead (
   VIRTIO_FS_FILE *VirtioFsFile;
   EFI_STATUS     Status;
 
+  DEBUG ((DEBUG_INFO, "%a:%d: %a is called.\n", __FILE__, __LINE__, __FUNCTION__));
+
   VirtioFsFile = VIRTIO_FS_FILE_FROM_SIMPLE_FILE (This);
 
   if (VirtioFsFile->IsDirectory) {

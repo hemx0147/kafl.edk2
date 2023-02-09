@@ -486,6 +486,8 @@ VirtioBlkReadBlocks (
   VBLK_DEV   *Dev;
   EFI_STATUS Status;
 
+  DEBUG ((DEBUG_INFO, "%a:%d: %a is called.\n", __FILE__, __LINE__, __FUNCTION__));
+
   if (BufferSize == 0) {
     return EFI_SUCCESS;
   }
