@@ -52,7 +52,7 @@ VirtioPciDeviceRead (
   VIRTIO_PCI_DEVICE         *Dev;
 
   DEBUG ((DEBUG_INFO,
-    "VirtioPciDeviceRead: DeviceProtocol: %p, FieldOffset: %d, FieldSize: %d, BufSize: %d, Buf: %p\n",
+    "VirtioPciDeviceRead: DeviceProtocol: %p, FieldOffset: %d, FieldSize: %d, BufSize: %d, Buf: %p",
     This,
     FieldOffset,
     FieldSize,
@@ -62,9 +62,22 @@ VirtioPciDeviceRead (
 
   Dev = VIRTIO_PCI_DEVICE_FROM_VIRTIO_DEVICE (This);
 
-  return VirtioPciIoRead (Dev,
+  EFI_STATUS Status = VirtioPciIoRead (Dev,
       Dev->DeviceSpecificConfigurationOffset + FieldOffset,
       FieldSize, BufferSize, Buffer);
+
+  DEBUG ((DEBUG_INFO, " ["));
+  for (UINTN i = 0; i < BufferSize; i++)
+  {
+    if (i > 0)
+    {
+      DEBUG ((DEBUG_INFO, " "));
+    }
+    DEBUG ((DEBUG_INFO, "%02X", ((CHAR8 *) Buffer)[i]));
+  }
+  DEBUG ((DEBUG_INFO, "]\n"));
+
+  return Status;
 }
 
 /**
