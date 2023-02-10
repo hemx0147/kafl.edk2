@@ -37,9 +37,11 @@ BmConnectAllDriversToAllControllers (
            &HandleBuffer
            );
 
+    DEBUG ((DEBUG_INFO, "%a:%d:%a: connecting EFI 1.10 drivers\n", __FILE__, __LINE__, __FUNCTION__));
     for (Index = 0; Index < HandleCount; Index++) {
       gBS->ConnectController (HandleBuffer[Index], NULL, NULL, TRUE);
     }
+    DEBUG ((DEBUG_INFO, "%a:%d:%a: done connecting EFI 1.10 drivers\n", __FILE__, __LINE__, __FUNCTION__));
 
     if (HandleBuffer != NULL) {
       FreePool (HandleBuffer);
@@ -51,7 +53,9 @@ BmConnectAllDriversToAllControllers (
     // If any new driver is dispatched (Status == EFI_SUCCESS) and we will try
     // the connect again.
     //
+    DEBUG ((DEBUG_INFO, "%a:%d:%a: dispatching drivers\n", __FILE__, __LINE__, __FUNCTION__));
     Status = gDS->Dispatch ();
+    DEBUG ((DEBUG_INFO, "%a:%d:%a: done dispatching drivers\n", __FILE__, __LINE__, __FUNCTION__));
 
   } while (!EFI_ERROR (Status));
 }
