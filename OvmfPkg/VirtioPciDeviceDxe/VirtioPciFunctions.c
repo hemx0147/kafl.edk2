@@ -51,14 +51,14 @@ VirtioPciDeviceRead (
 {
   VIRTIO_PCI_DEVICE         *Dev;
 
-  DEBUG ((DEBUG_INFO,
-    "VirtioPciDeviceRead: DeviceProtocol: %p, FieldOffset: %d, FieldSize: %d, BufSize: %d, Buf: %p",
-    This,
-    FieldOffset,
-    FieldSize,
-    BufferSize,
-    Buffer
-  ));
+  // DEBUG ((DEBUG_INFO,
+  //   "VirtioPciDeviceRead: DeviceProtocol: %p, FieldOffset: %d, FieldSize: %d, BufSize: %d, Buf: %p",
+  //   This,
+  //   FieldOffset,
+  //   FieldSize,
+  //   BufferSize,
+  //   Buffer
+  // ));
 
   Dev = VIRTIO_PCI_DEVICE_FROM_VIRTIO_DEVICE (This);
 
@@ -66,16 +66,16 @@ VirtioPciDeviceRead (
       Dev->DeviceSpecificConfigurationOffset + FieldOffset,
       FieldSize, BufferSize, Buffer);
 
-  DEBUG ((DEBUG_INFO, " ["));
-  for (UINTN i = 0; i < BufferSize; i++)
-  {
-    if (i > 0)
-    {
-      DEBUG ((DEBUG_INFO, " "));
-    }
-    DEBUG ((DEBUG_INFO, "%02X", ((CHAR8 *) Buffer)[i]));
-  }
-  DEBUG ((DEBUG_INFO, "]\n"));
+  // DEBUG ((DEBUG_INFO, " ["));
+  // for (UINTN i = 0; i < BufferSize; i++)
+  // {
+  //   if (i > 0)
+  //   {
+  //     DEBUG ((DEBUG_INFO, " "));
+  //   }
+  //   DEBUG ((DEBUG_INFO, "%02X", ((UINT8 *) Buffer)[i]));
+  // }
+  // DEBUG ((DEBUG_INFO, "]\n"));
 
   return Status;
 }
@@ -125,6 +125,8 @@ VirtioPciGetDeviceFeatures (
   EFI_STATUS                Status;
   UINT32                    Features32;
 
+  DEBUG ((DEBUG_INFO, "%a:%d:%a: called\n", __FILE__, __LINE__, __FUNCTION__));
+
   if (DeviceFeatures == NULL) {
     return EFI_INVALID_PARAMETER;
   }
@@ -148,6 +150,8 @@ VirtioPciGetQueueSize (
 {
   VIRTIO_PCI_DEVICE         *Dev;
 
+  DEBUG ((DEBUG_INFO, "%a:%d:%a: is called\n", __FILE__, __LINE__, __FUNCTION__));
+
   if (QueueNumMax == NULL) {
     return EFI_INVALID_PARAMETER;
   }
@@ -166,6 +170,8 @@ VirtioPciGetDeviceStatus (
   )
 {
   VIRTIO_PCI_DEVICE         *Dev;
+
+  DEBUG ((DEBUG_INFO, "%a:%d:%a: is called\n", __FILE__, __LINE__, __FUNCTION__));
 
   if (DeviceStatus == NULL) {
     return EFI_INVALID_PARAMETER;

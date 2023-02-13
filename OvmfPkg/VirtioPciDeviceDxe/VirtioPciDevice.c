@@ -77,15 +77,11 @@ VirtioPciIoRead (
   UINTN                     Count;
   EFI_PCI_IO_PROTOCOL_WIDTH Width;
   EFI_PCI_IO_PROTOCOL       *PciIo;
+  EFI_STATUS                Status;
 
-  // DEBUG ((DEBUG_INFO,
-  //   "VirtioPciIoRead: Device: %p, FieldOffset: %d, FieldSize: %d, BufSize: %d, Buf: %p\n",
-  //   Dev,
-  //   FieldOffset,
-  //   FieldSize,
-  //   BufferSize,
-  //   Buffer
-  // ));
+  DEBUG ((DEBUG_INFO,
+    "VirtioPciIoRead: Device: %p, FieldOffset: %d, FieldSize: %d, BufSize: %d, Buf: %p",
+    Dev, FieldOffset, FieldSize, BufferSize, Buffer));
 
   ASSERT (FieldSize == BufferSize);
 
@@ -126,7 +122,7 @@ VirtioPciIoRead (
       return EFI_INVALID_PARAMETER;
   }
 
-  return PciIo->Io.Read (
+  Status = PciIo->Io.Read (
                      PciIo,
                      Width,
                      PCI_BAR_IDX0,
@@ -134,6 +130,22 @@ VirtioPciIoRead (
                      Count,
                      Buffer
                      );
+
+  //
+  // print buffer content
+  //
+  DEBUG ((DEBUG_INFO, " ["));
+  for (UINTN i = 0; i < BufferSize; i++)
+  {
+    if (i > 0)
+    {
+      DEBUG ((DEBUG_INFO, " "));
+    }
+    DEBUG ((DEBUG_INFO, "%02X", ((UINT8 *) Buffer) [i]));
+  }
+  DEBUG ((DEBUG_INFO, "]\n"));
+
+  return Status;
 }
 
 /**
@@ -337,6 +349,8 @@ VirtioPciInit (
   EFI_PCI_IO_PROTOCOL   *PciIo;
   PCI_TYPE00            Pci;
 
+  DEBUG ((DEBUG_INFO, "%a:%d:%a: is called\n", __FILE__, __LINE__, __FUNCTION__));
+
   ASSERT (Device != NULL);
   PciIo = Device->PciIo;
   ASSERT (PciIo != NULL);
@@ -437,6 +451,8 @@ VirtioPciDeviceBindingStart (
   VIRTIO_PCI_DEVICE   *Device;
   EFI_STATUS           Status;
 
+  DEBUG ((DEBUG_INFO, "%a:%d: %a is called\n", __FILE__, __LINE__, __FUNCTION__));
+
   Device = (VIRTIO_PCI_DEVICE *) AllocateZeroPool (sizeof *Device);
   if (Device == NULL) {
     return EFI_OUT_OF_RESOURCES;
@@ -481,7 +497,9 @@ VirtioPciDeviceBindingStart (
   // PCI IO access granted, configure protocol instance
   //
 
+  DEBUG ((DEBUG_INFO, "%a:%d:%a: start VirtioPciInit\n", __FILE__, __LINE__, __FUNCTION__));
   Status = VirtioPciInit (Device);
+  DEBUG ((DEBUG_INFO, "%a:%d:%a: VirtioPciInit done\n", __FILE__, __LINE__, __FUNCTION__));
   if (EFI_ERROR (Status)) {
     goto RestorePciAttributes;
   }
@@ -491,9 +509,11 @@ VirtioPciDeviceBindingStart (
   // interface.
   //
   Device->Signature = VIRTIO_PCI_DEVICE_SIGNATURE;
+  DEBUG ((DEBUG_INFO, "%a:%d:%a: install virtio protocol interface\n", __FILE__, __LINE__, __FUNCTION__));
   Status = gBS->InstallProtocolInterface (&DeviceHandle,
                   &gVirtioDeviceProtocolGuid, EFI_NATIVE_INTERFACE,
                   &Device->VirtioDevice);
+  DEBUG ((DEBUG_INFO, "%a:%d:%a: install virtio protocol interface done\n", __FILE__, __LINE__, __FUNCTION__));
   if (EFI_ERROR (Status)) {
     goto UninitDev;
   }
@@ -680,6 +700,7 @@ VirtioPciDeviceEntryPoint (
   IN EFI_SYSTEM_TABLE *SystemTable
   )
 {
+  DEBUG ((DEBUG_INFO, "%a:%d: %a is called\n", __FILE__, __LINE__, __FUNCTION__));
   return EfiLibInstallDriverBindingComponentName2 (
            ImageHandle,
            SystemTable,
