@@ -88,6 +88,8 @@ VirtioFsInit (
   UINTN            Idx;
   UINT64           RingBaseShift;
 
+  DEBUG ((DEBUG_INFO, "%a:%d:%a: called\n", __FILE__, __LINE__, __FUNCTION__));
+
   //
   // Execute virtio-v1.1-cs01-87fa6b5d8155, 3.1.1 Driver Requirements: Device
   // Initialization.

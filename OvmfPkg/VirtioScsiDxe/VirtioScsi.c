@@ -931,6 +931,8 @@ VirtioScsiInit (
   UINT32     NumQueues;  // for validation only
   UINT16     QueueSize;
 
+  DEBUG ((DEBUG_INFO, "%a:%d:%a: called\n", __FILE__, __LINE__, __FUNCTION__));
+
   //
   // Execute virtio-0.9.5, 2.2.1 Device Initialization Sequence.
   //

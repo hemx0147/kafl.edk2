@@ -500,6 +500,8 @@ VirtioNetInitialize (
   UINT8      NextDevStat;
   UINT64     Features;
 
+  DEBUG ((DEBUG_INFO, "%a:%d:%a: called\n", __FILE__, __LINE__, __FUNCTION__));
+
   if (This == NULL) {
     return EFI_INVALID_PARAMETER;
   }

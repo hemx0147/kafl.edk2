@@ -62,6 +62,8 @@ VirtioNetGetFeatures (
   UINTN      MacIdx;
   UINT16     LinkStatus;
 
+  DEBUG ((DEBUG_INFO, "%a:%d:%a: called\n", __FILE__, __LINE__, __FUNCTION__));
+
   //
   // Interrogate the device for features (virtio-0.9.5, 2.2.1 Device
   // Initialization Sequence), but don't complete setting it up.
@@ -87,6 +89,7 @@ VirtioNetGetFeatures (
   //
   // step 4a -- retrieve and validate features
   //
+  DEBUG ((DEBUG_INFO, "%a:%d:%a: retrieve & validate device features\n", __FILE__, __LINE__, __FUNCTION__));
   Status = Dev->VirtIo->GetDeviceFeatures (Dev->VirtIo, &Features);
   if (EFI_ERROR (Status)) {
     goto YieldDevice;
@@ -99,6 +102,7 @@ VirtioNetGetFeatures (
     Status = EFI_UNSUPPORTED;
     goto YieldDevice;
   }
+  DEBUG ((DEBUG_INFO, "%a:%d:%a: get device MAC address\n", __FILE__, __LINE__, __FUNCTION__));
   for (MacIdx = 0; MacIdx < SIZE_OF_VNET (Mac); ++MacIdx) {
     Status = Dev->VirtIo->ReadDevice (Dev->VirtIo,
                             OFFSET_OF_VNET (Mac) + MacIdx, // Offset
@@ -119,6 +123,7 @@ VirtioNetGetFeatures (
   }
   else {
     *MediaPresentSupported = TRUE;
+    DEBUG ((DEBUG_INFO, "%a:%d:%a: get device link status\n", __FILE__, __LINE__, __FUNCTION__));
     Status = VIRTIO_CFG_READ (Dev, LinkStatus, &LinkStatus);
     if (EFI_ERROR (Status)) {
       goto YieldDevice;

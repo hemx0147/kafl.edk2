@@ -2000,6 +2000,9 @@ EfiBootManagerBoot (
   REPORT_STATUS_CODE (EFI_PROGRESS_CODE, PcdGet32 (PcdProgressCodeOsLoaderStart));
 
 
+  //
+  // prevent UEFI Shell from starting as well (last boot option before UnableToBoot)
+  //
   DEBUG ((DEBUG_INFO, "Prevent image of BootOption '%s' (Boot%04X) from starting\n", BootOption->Description, BootOption->OptionNumber));
   Status = EFI_NOT_FOUND;
   // Status = gBS->StartImage (ImageHandle, &BootOption->ExitDataSize, &BootOption->ExitData);

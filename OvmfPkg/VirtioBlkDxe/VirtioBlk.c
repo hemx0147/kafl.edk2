@@ -726,6 +726,8 @@ VirtioBlkInit (
   UINT16     QueueSize;
   UINT64     RingBaseShift;
 
+  DEBUG ((DEBUG_INFO, "%a:%d:%a: called\n", __FILE__, __LINE__, __FUNCTION__));
+
   PhysicalBlockExp = 0;
   AlignmentOffset = 0;
   OptIoSize = 0;
