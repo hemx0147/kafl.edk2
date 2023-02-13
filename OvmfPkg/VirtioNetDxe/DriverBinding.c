@@ -22,7 +22,7 @@
           EFI_SIMPLE_NETWORK_RECEIVE_PROMISCUOUS   \
           ))
 
-/*
+/**
   Temporarily enable then reset the virtio-net device in order to retrieve
   configuration values needed by Simple Network Protocol and Simple Network
   Mode fields.
@@ -33,11 +33,11 @@
   VSTAT_FAILED instead of being reset. This serves only informative purposes
   for the host side.
 
-  param[in,out] Dev                 The VNET_DEV structure being created for
+  @param[in,out] Dev                The VNET_DEV structure being created for
                                     the virtio-net device.
-  param[out] MacAddress             MAC address configured by the host.
-  param[out] MediaPresentSupported  Link status is made available by the host.
-  param[out] MediaPresent           If link status is made available by the
+  @param[out] MacAddress            MAC address configured by the host.
+  @param[out] MediaPresentSupported Link status is made available by the host.
+  @param[out] MediaPresent          If link status is made available by the
                                     host, the current link status is stored in
                                     *MediaPresent. Otherwise MediaPresent is
                                     unused.
