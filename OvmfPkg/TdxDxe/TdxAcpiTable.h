@@ -36,5 +36,3 @@ AlterAcpiTable (
   );
 
 #endif
-
-

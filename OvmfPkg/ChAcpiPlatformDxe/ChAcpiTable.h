@@ -23,7 +23,7 @@
 #include <IndustryStandard/Acpi.h>
 
 /**
-  Install ACPI table from cloud-hypervisor when ACPI install protocol is 
+  Install ACPI table from cloud-hypervisor when ACPI install protocol is
   available.
 
   @param[in]  Event     Event whose notification function is being invoked
@@ -37,4 +37,3 @@ ChInstallAcpiTable (
   );
 
 #endif
-

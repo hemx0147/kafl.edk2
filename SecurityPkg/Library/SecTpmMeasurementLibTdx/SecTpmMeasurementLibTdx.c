@@ -159,6 +159,3 @@ TpmMeasureAndLogData (
   Status = EFI_SUCCESS;
   return Status;
 }
-
-
-
