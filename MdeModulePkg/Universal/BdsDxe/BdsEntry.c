@@ -1094,6 +1094,11 @@ BdsEntry (
 
   DEBUG ((EFI_D_ERROR, "[Bds] Unable to boot!\n"));
   PlatformBootManagerUnableToBoot ();
+
+  //
+  // kAFL: deactivate fuzzer before deadloop
+  //
+
   CpuDeadLoop ();
 }
 

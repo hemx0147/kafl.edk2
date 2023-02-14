@@ -96,6 +96,11 @@ VirtioNetGetFeatures (
   }
 
   //
+  // kAFL: inject fuzzing input into device feature field
+  // payload buffer to 64-bit integer (UINT8[4] -> UINT64)
+  //
+
+  //
   // get MAC address byte-wise
   //
   if ((Features & VIRTIO_NET_F_MAC) == 0) {
@@ -114,6 +119,10 @@ VirtioNetGetFeatures (
       goto YieldDevice;
     }
   }
+
+  //
+  // kAFL: maybe also inject (another) payload into MAC address buffer here
+  //
 
   //
   // check if link status is reported, and if so, what the link status is
@@ -458,6 +467,10 @@ VirtioNetDriverBindingStart (
   if (EFI_ERROR (Status)) {
     goto FreeVirtioNet;
   }
+
+  //
+  // kAFL: activate fuzzer before SNP population (device feature bits & MAC is set there)
+  //
 
   //
   // now we can run a basic one-shot virtio-net initialization required to
