@@ -103,8 +103,8 @@ VirtioNetGetFeatures (
   // kAFL: inject fuzzing input into device feature field
   // payload buffer to 64-bit integer (UINT8[4] -> UINT64)
   //
-  kAFL_hypercall(HYPERCALL_KAFL_NEXT_PAYLOAD, 0);
-  kAFL_hypercall(HYPERCALL_KAFL_ACQUIRE, 0);
+  // kAFL_hypercall(HYPERCALL_KAFL_NEXT_PAYLOAD, 0);
+  // kAFL_hypercall(HYPERCALL_KAFL_ACQUIRE, 0);
 
   // transform fuzzer payload from buffer to UINT64
   // i.e. first 4/8 bytes of buffer are used for the UINT64 Features variable
