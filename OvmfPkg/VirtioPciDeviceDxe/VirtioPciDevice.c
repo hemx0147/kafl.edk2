@@ -518,6 +518,7 @@ VirtioPciDeviceBindingStart (
     goto UninitDev;
   }
 
+  DEBUG ((DEBUG_INFO, "%a:%d:%a: return to caller\n", __FILE__, __LINE__, __FUNCTION__));
   return EFI_SUCCESS;
 
 UninitDev:

@@ -142,6 +142,7 @@ CommonExceptionHandlerWorker (
     DumpImageAndCpuContent (ExceptionType, SystemContext);
 
 #ifdef KAFL_ENABLE
+    hprintf("SMM CPU Exception\n");
     kAFL_hypercall(HYPERCALL_KAFL_PANIC, 0);
 #endif
 

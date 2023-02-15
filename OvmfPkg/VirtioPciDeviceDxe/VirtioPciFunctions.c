@@ -51,6 +51,8 @@ VirtioPciDeviceRead (
 {
   VIRTIO_PCI_DEVICE         *Dev;
 
+  DEBUG ((DEBUG_INFO, "%a:%d:%a called\n", __FILE__, __LINE__, __FUNCTION__));
+
   // DEBUG ((DEBUG_INFO,
   //   "VirtioPciDeviceRead: DeviceProtocol: %p, FieldOffset: %d, FieldSize: %d, BufSize: %d, Buf: %p",
   //   This,

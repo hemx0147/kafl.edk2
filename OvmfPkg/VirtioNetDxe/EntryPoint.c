@@ -33,7 +33,9 @@ VirtioNetEntryPoint (
   IN EFI_SYSTEM_TABLE *SystemTable
   )
 {
-  return EfiLibInstallDriverBindingComponentName2 (
+  DEBUG ((DEBUG_INFO, "%a:%d:%a called\n", __FILE__, __LINE__, __FUNCTION__));
+
+  EFI_STATUS Status = EfiLibInstallDriverBindingComponentName2 (
            ImageHandle,
            SystemTable,
            &gVirtioNetDriverBinding,
@@ -41,4 +43,7 @@ VirtioNetEntryPoint (
            &gVirtioNetComponentName,
            &gVirtioNetComponentName2
            );
+
+  DEBUG ((DEBUG_INFO, "%a:%d:%a return with status %x\n", __FILE__, __LINE__, __FUNCTION__, Status));
+  return Status;
 }
