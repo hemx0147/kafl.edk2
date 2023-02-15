@@ -13,6 +13,7 @@
 #include <Library/DevicePathLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/UefiBootServicesTableLib.h>
+#include <Library/NyxHypercalls.h>
 
 #include "VirtioNet.h"
 
@@ -21,6 +22,8 @@
           EFI_SIMPLE_NETWORK_RECEIVE_BROADCAST   | \
           EFI_SIMPLE_NETWORK_RECEIVE_PROMISCUOUS   \
           ))
+
+// kAFL_payload *gKaflPayload;
 
 /**
   Temporarily enable then reset the virtio-net device in order to retrieve
@@ -71,6 +74,7 @@ VirtioNetGetFeatures (
   NextDevStat = 0;             // step 1 -- reset device
   Status = Dev->VirtIo->SetDeviceStatus (Dev->VirtIo, NextDevStat);
   if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_INFO, "%a:%d:%a return with status %x\n", __FILE__, __LINE__, __FUNCTION__, Status));
     return Status;
   }
 
@@ -99,6 +103,12 @@ VirtioNetGetFeatures (
   // kAFL: inject fuzzing input into device feature field
   // payload buffer to 64-bit integer (UINT8[4] -> UINT64)
   //
+  kAFL_hypercall(HYPERCALL_KAFL_NEXT_PAYLOAD, 0);
+  kAFL_hypercall(HYPERCALL_KAFL_ACQUIRE, 0);
+
+  // transform fuzzer payload from buffer to UINT64
+  // i.e. first 4/8 bytes of buffer are used for the UINT64 Features variable
+  // Features = ((UINT64 *) (gKaflPayload->data))[0];
 
   //
   // get MAC address byte-wise
@@ -121,8 +131,12 @@ VirtioNetGetFeatures (
   }
 
   //
-  // kAFL: maybe also inject (another) payload into MAC address buffer here
+  // kAFL: inject rest of payload into MAC address buffer here
   //
+  // for (MacIdx = 0; MacIdx < SIZE_OF_VNET (Mac); ++MacIdx)
+  // {
+  //   MacAddress->Addr[MacIdx] = (gKaflPayload->data + sizeof(UINT64))[MacIdx];
+  // }
 
   //
   // check if link status is reported, and if so, what the link status is
@@ -144,6 +158,7 @@ YieldDevice:
   Dev->VirtIo->SetDeviceStatus (Dev->VirtIo,
     EFI_ERROR (Status) ? VSTAT_FAILED : 0);
 
+  DEBUG ((DEBUG_INFO, "%a:%d:%a return with status %x\n", __FILE__, __LINE__, __FUNCTION__, Status));
   return Status;
 }
 
@@ -170,6 +185,8 @@ VirtioNetSnpPopulate (
 {
   EFI_STATUS Status;
 
+  DEBUG ((DEBUG_INFO, "%a:%d:%a: called\n", __FILE__, __LINE__, __FUNCTION__));
+
   //
   // We set up a function here that is asynchronously callable by an
   // external application to check if there are any packets available for
@@ -194,6 +211,7 @@ VirtioNetSnpPopulate (
   Status = gBS->CreateEvent (EVT_NOTIFY_WAIT, TPL_CALLBACK,
                   &VirtioNetIsPacketAvailable, Dev, &Dev->Snp.WaitForPacket);
   if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_INFO, "%a:%d:%a return with status %x\n", __FILE__, __LINE__, __FUNCTION__, Status));
     return Status;
   }
 
@@ -255,10 +273,12 @@ VirtioNetSnpPopulate (
     goto CloseWaitForPacket;
   }
 
+  DEBUG ((DEBUG_INFO, "%a:%d:%a return with status %x\n", __FILE__, __LINE__, __FUNCTION__, Status));
   return EFI_SUCCESS;
 
 CloseWaitForPacket:
   gBS->CloseEvent (Dev->Snp.WaitForPacket);
+  DEBUG ((DEBUG_INFO, "%a:%d:%a return with status %x\n", __FILE__, __LINE__, __FUNCTION__, Status));
   return Status;
 }
 
@@ -280,6 +300,8 @@ VirtioNetSnpEvacuate (
   IN OUT VNET_DEV *Dev
   )
 {
+  DEBUG ((DEBUG_INFO, "%a:%d:%a: called\n", __FILE__, __LINE__, __FUNCTION__));
+
   //
   // This function runs either at TPL_CALLBACK already (from
   // VirtioNetDriverBindingStop()), or it is part of a teardown following
@@ -357,11 +379,14 @@ VirtioNetDriverBindingSupported (
   EFI_STATUS          Status;
   VIRTIO_DEVICE_PROTOCOL *VirtIo;
 
+  // DEBUG ((DEBUG_INFO, "%a:%d:%a called\n", __FILE__, __LINE__, __FUNCTION__));
+
   //
   // Attempt to open the device with the VirtIo set of interfaces. On success,
   // the protocol is "instantiated" for the VirtIo device. Covers duplicate open
   // attempts (EFI_ALREADY_STARTED).
   //
+  // DEBUG ((DEBUG_INFO, "%a:%d:%a Open virtio device protocol via device handle\n", __FILE__, __LINE__, __FUNCTION__));
   Status = gBS->OpenProtocol (
                   DeviceHandle,               // candidate device
                   &gVirtioDeviceProtocolGuid, // for generic VirtIo access
@@ -373,9 +398,11 @@ VirtioNetDriverBindingSupported (
                                               // the device; to be released
                   );
   if (EFI_ERROR (Status)) {
+    // DEBUG ((DEBUG_INFO, "%a:%d:%a return with status %x\n", __FILE__, __LINE__, __FUNCTION__, Status));
     return Status;
   }
 
+  DEBUG ((DEBUG_INFO, "%a:%d:%a Check virtio subsystem device id\n", __FILE__, __LINE__, __FUNCTION__));
   if (VirtIo->SubSystemDeviceId != VIRTIO_SUBSYSTEM_NETWORK_CARD) {
     Status = EFI_UNSUPPORTED;
   }
@@ -384,8 +411,11 @@ VirtioNetDriverBindingSupported (
   // We needed VirtIo access only transitorily, to see whether we support the
   // device or not.
   //
+  DEBUG ((DEBUG_INFO, "%a:%d:%a Close virtio device protocol\n", __FILE__, __LINE__, __FUNCTION__));
   gBS->CloseProtocol (DeviceHandle, &gVirtioDeviceProtocolGuid,
          This->DriverBindingHandle, DeviceHandle);
+
+  DEBUG ((DEBUG_INFO, "%a:%d:%a return with status %x\n", __FILE__, __LINE__, __FUNCTION__, Status));
   return Status;
 }
 
@@ -452,11 +482,14 @@ VirtioNetDriverBindingStart (
   MAC_ADDR_DEVICE_PATH     MacNode;
   VOID                     *ChildVirtIo;
 
+  DEBUG ((DEBUG_INFO, "%a:%d:%a called\n", __FILE__, __LINE__, __FUNCTION__));
+
   //
   // allocate space for the driver instance
   //
   Dev = (VNET_DEV *) AllocateZeroPool (sizeof *Dev);
   if (Dev == NULL) {
+    DEBUG ((DEBUG_INFO, "%a:%d:%a return with status %x\n", __FILE__, __LINE__, __FUNCTION__, Status));
     return EFI_OUT_OF_RESOURCES;
   }
   Dev->Signature = VNET_SIG;
@@ -471,6 +504,65 @@ VirtioNetDriverBindingStart (
   //
   // kAFL: activate fuzzer before SNP population (device feature bits & MAC is set there)
   //
+
+  // UINT8 payload_buffer[2*PAYLOAD_MAX_SIZE] __attribute__((aligned(4096)));
+  hprintf("[kAFL] creating kafl payload buffer\n");
+  UINT8 payload_buffer[2*PAYLOAD_MAX_SIZE] __attribute__((aligned(4096)));
+
+  hprintf("[kAFL] creating kafl payload\n");
+  kAFL_payload *payload = (kAFL_payload*)payload_buffer;
+
+  // ensure payload is paged in?
+  hprintf("[kAFL] zeroing payload buffer\n");
+  ZeroMem(payload_buffer, PAYLOAD_MAX_SIZE);
+
+  // initial handshake
+  kAFL_hypercall(HYPERCALL_KAFL_ACQUIRE, 0);
+  kAFL_hypercall(HYPERCALL_KAFL_RELEASE, 0);
+
+  // set host configuration
+  volatile host_config_t host_config;
+  kAFL_hypercall(HYPERCALL_KAFL_GET_HOST_CONFIG, (UINTN)&host_config);
+  if (host_config.host_magic != NYX_HOST_MAGIC ||
+      host_config.host_version != NYX_HOST_VERSION) {
+     hprintf("host_config magic/version mismatch!\n");
+     habort("GET_HOST_CNOFIG magic/version mismatch!\n");
+  }
+
+  if (PAYLOAD_MAX_SIZE < host_config.payload_buffer_size) {
+     habort("Insufficient guest payload buffer!\n");
+  }
+
+  hprintf("[kAFL] submit agent config\n");
+  /* submit agent configuration */
+  volatile agent_config_t agent_config = {0};
+  agent_config.agent_magic = NYX_AGENT_MAGIC;
+  agent_config.agent_version = NYX_AGENT_VERSION;
+  agent_config.agent_tracing = 0; // trace by host!
+  agent_config.agent_ijon_tracing = 0; // no IJON
+  agent_config.agent_non_reload_mode = 1; // allow persistent
+  agent_config.coverage_bitmap_size = host_config.bitmap_size;
+  kAFL_hypercall(HYPERCALL_KAFL_SET_AGENT_CONFIG, (UINTN)&agent_config);
+
+  hprintf("[kAFL] get next payload\n");
+  kAFL_hypercall(HYPERCALL_KAFL_GET_PAYLOAD, (UINTN)payload_buffer);
+  kAFL_hypercall(HYPERCALL_KAFL_NEXT_PAYLOAD, (UINTN)payload_buffer);
+
+  hprintf("[kAFL] enable tracing\n");
+  kAFL_hypercall(HYPERCALL_KAFL_ACQUIRE, 0);
+
+  hprintf("[kAFL] do nothing with payload\n");
+  // hprintf("[kAFL] copy payload into dummy buffer\n");
+  // UINT8 dummyBuffer[PAYLOAD_SIZE] = { 0 };
+  // CopyMem(dummyBuffer, payload->data, payload->size);
+
+  hprintf("[kAFL] disable tracing\n");
+  if (payload->size <= 100) {
+  // signal STARVED input
+	  kAFL_hypercall(HYPERCALL_KAFL_RELEASE, 1);
+  } else {
+	  kAFL_hypercall(HYPERCALL_KAFL_RELEASE, 0);
+  }
 
   //
   // now we can run a basic one-shot virtio-net initialization required to
@@ -530,6 +622,7 @@ VirtioNetDriverBindingStart (
     goto UninstallMultiple;
   }
 
+  DEBUG ((DEBUG_INFO, "%a:%d:%a return with status %x\n", __FILE__, __LINE__, __FUNCTION__, Status));
   return EFI_SUCCESS;
 
 UninstallMultiple:
@@ -551,6 +644,7 @@ CloseVirtIo:
 FreeVirtioNet:
   FreePool (Dev);
 
+  DEBUG ((DEBUG_INFO, "%a:%d:%a return with status %x\n", __FILE__, __LINE__, __FUNCTION__, Status));
   return Status;
 }
 
@@ -598,6 +692,8 @@ VirtioNetDriverBindingStop (
   IN EFI_HANDLE                  *ChildHandleBuffer
   )
 {
+  DEBUG ((DEBUG_INFO, "%a:%d:%a called\n", __FILE__, __LINE__, __FUNCTION__));
+
   if (NumberOfChildren > 0) {
     //
     // free all resources for whose access we need the child handle, because

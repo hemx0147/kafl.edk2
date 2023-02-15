@@ -15,6 +15,8 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #include "Bds.h"
 #include "Language.h"
 #include "HwErrRecSupport.h"
+#include <Library/NyxHypercalls.h>
+#include <Library/DebugLib.h>
 
 #define SET_BOOT_OPTION_SUPPORT_KEY_COUNT(a, c) {  \
       (a) = ((a) & ~EFI_BOOT_OPTION_SUPPORT_COUNT) | (((c) << LowBitSet32 (EFI_BOOT_OPTION_SUPPORT_COUNT)) & EFI_BOOT_OPTION_SUPPORT_COUNT); \
@@ -1093,12 +1095,24 @@ BdsEntry (
   EfiBootManagerFreeLoadOption (&PlatformDefaultBootOption);
 
   DEBUG ((EFI_D_ERROR, "[Bds] Unable to boot!\n"));
-  PlatformBootManagerUnableToBoot ();
+  // stop execution via assert instead of entering CPU deadloop
+  DEBUG ((EFI_D_ERROR, "[Bds] abort execution via ASSERT\n"));
+  ASSERT(FALSE);
+  DEBUG ((EFI_D_ERROR, "[Bds] code after ASSERT\n"));
 
   //
   // kAFL: deactivate fuzzer before deadloop
-  //
+  // 
+  // TODO: omit check for starved input for now becaue gKaflPayload is undefined here
+  // if (gKaflPayload->size <= 0.9 * PAYLOAD_MAX_SIZE)
+  // {
+  // // signal STARVED input
+  //   kAFL_hypercall(HYPERCALL_KAFL_RELEASE, 1);
+  // } else {
+  // }
+  // kAFL_hypercall(HYPERCALL_KAFL_RELEASE, 0);
 
+  PlatformBootManagerUnableToBoot ();
   CpuDeadLoop ();
 }
 
