@@ -1095,23 +1095,10 @@ BdsEntry (
   EfiBootManagerFreeLoadOption (&PlatformDefaultBootOption);
 
   DEBUG ((EFI_D_ERROR, "[Bds] Unable to boot!\n"));
-  // stop execution via assert instead of entering CPU deadloop
-  DEBUG ((EFI_D_ERROR, "[Bds] abort execution via ASSERT\n"));
-  ASSERT(FALSE);
-  DEBUG ((EFI_D_ERROR, "[Bds] code after ASSERT\n"));
 
   //
-  // kAFL: deactivate fuzzer before deadloop
+  // kAFL: fuzzer deactivation in CPU deadloop
   // 
-  // TODO: omit check for starved input for now becaue gKaflPayload is undefined here
-  // if (gKaflPayload->size <= 0.9 * PAYLOAD_MAX_SIZE)
-  // {
-  // // signal STARVED input
-  //   kAFL_hypercall(HYPERCALL_KAFL_RELEASE, 1);
-  // } else {
-  // }
-  // kAFL_hypercall(HYPERCALL_KAFL_RELEASE, 0);
-
   PlatformBootManagerUnableToBoot ();
   CpuDeadLoop ();
 }

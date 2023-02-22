@@ -23,7 +23,6 @@
           EFI_SIMPLE_NETWORK_RECEIVE_PROMISCUOUS   \
           ))
 
-// kAFL_payload *gKaflPayload;
 
 /**
   Temporarily enable then reset the virtio-net device in order to retrieve
@@ -100,17 +99,6 @@ VirtioNetGetFeatures (
   }
 
   //
-  // kAFL: inject fuzzing input into device feature field
-  // payload buffer to 64-bit integer (UINT8[4] -> UINT64)
-  //
-  // kAFL_hypercall(HYPERCALL_KAFL_NEXT_PAYLOAD, 0);
-  // kAFL_hypercall(HYPERCALL_KAFL_ACQUIRE, 0);
-
-  // transform fuzzer payload from buffer to UINT64
-  // i.e. first 4/8 bytes of buffer are used for the UINT64 Features variable
-  // Features = ((UINT64 *) (gKaflPayload->data))[0];
-
-  //
   // get MAC address byte-wise
   //
   if ((Features & VIRTIO_NET_F_MAC) == 0) {
@@ -129,14 +117,6 @@ VirtioNetGetFeatures (
       goto YieldDevice;
     }
   }
-
-  //
-  // kAFL: inject rest of payload into MAC address buffer here
-  //
-  // for (MacIdx = 0; MacIdx < SIZE_OF_VNET (Mac); ++MacIdx)
-  // {
-  //   MacAddress->Addr[MacIdx] = (gKaflPayload->data + sizeof(UINT64))[MacIdx];
-  // }
 
   //
   // check if link status is reported, and if so, what the link status is
@@ -499,69 +479,6 @@ VirtioNetDriverBindingStart (
                   DeviceHandle, EFI_OPEN_PROTOCOL_BY_DRIVER);
   if (EFI_ERROR (Status)) {
     goto FreeVirtioNet;
-  }
-
-  //
-  // kAFL: activate fuzzer before SNP population (device feature bits & MAC is set there)
-  //
-
-  // UINT8 payload_buffer[2*PAYLOAD_MAX_SIZE] __attribute__((aligned(4096)));
-  hprintf("[kAFL] creating kafl payload buffer\n");
-  UINT8 payload_buffer[2*PAYLOAD_MAX_SIZE] __attribute__((aligned(4096)));
-
-  hprintf("[kAFL] creating kafl payload\n");
-  kAFL_payload *payload = (kAFL_payload*)payload_buffer;
-
-  // ensure payload is paged in?
-  hprintf("[kAFL] zeroing payload buffer\n");
-  ZeroMem(payload_buffer, PAYLOAD_MAX_SIZE);
-
-  // initial handshake
-  kAFL_hypercall(HYPERCALL_KAFL_ACQUIRE, 0);
-  kAFL_hypercall(HYPERCALL_KAFL_RELEASE, 0);
-
-  // set host configuration
-  volatile host_config_t host_config;
-  kAFL_hypercall(HYPERCALL_KAFL_GET_HOST_CONFIG, (UINTN)&host_config);
-  if (host_config.host_magic != NYX_HOST_MAGIC ||
-      host_config.host_version != NYX_HOST_VERSION) {
-     hprintf("host_config magic/version mismatch!\n");
-     habort("GET_HOST_CNOFIG magic/version mismatch!\n");
-  }
-
-  if (PAYLOAD_MAX_SIZE < host_config.payload_buffer_size) {
-     habort("Insufficient guest payload buffer!\n");
-  }
-
-  hprintf("[kAFL] submit agent config\n");
-  /* submit agent configuration */
-  volatile agent_config_t agent_config = {0};
-  agent_config.agent_magic = NYX_AGENT_MAGIC;
-  agent_config.agent_version = NYX_AGENT_VERSION;
-  agent_config.agent_tracing = 0; // trace by host!
-  agent_config.agent_ijon_tracing = 0; // no IJON
-  agent_config.agent_non_reload_mode = 1; // allow persistent
-  agent_config.coverage_bitmap_size = host_config.bitmap_size;
-  kAFL_hypercall(HYPERCALL_KAFL_SET_AGENT_CONFIG, (UINTN)&agent_config);
-
-  hprintf("[kAFL] get next payload\n");
-  kAFL_hypercall(HYPERCALL_KAFL_GET_PAYLOAD, (UINTN)payload_buffer);
-  kAFL_hypercall(HYPERCALL_KAFL_NEXT_PAYLOAD, (UINTN)payload_buffer);
-
-  hprintf("[kAFL] enable tracing\n");
-  kAFL_hypercall(HYPERCALL_KAFL_ACQUIRE, 0);
-
-  hprintf("[kAFL] do nothing with payload\n");
-  // hprintf("[kAFL] copy payload into dummy buffer\n");
-  // UINT8 dummyBuffer[PAYLOAD_SIZE] = { 0 };
-  // CopyMem(dummyBuffer, payload->data, payload->size);
-
-  hprintf("[kAFL] disable tracing\n");
-  if (payload->size <= 100) {
-  // signal STARVED input
-	  kAFL_hypercall(HYPERCALL_KAFL_RELEASE, 1);
-  } else {
-	  kAFL_hypercall(HYPERCALL_KAFL_RELEASE, 0);
   }
 
   //
