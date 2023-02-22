@@ -1522,7 +1522,7 @@ PlatformBootManagerAfterConsole (
   // Process QEMU's -kernel command line option
   //
   DEBUG ((DEBUG_INFO, "%a:%d:%a: try run Qemu kernel\n", __FILE__, __LINE__, __FUNCTION__));
-  TryRunningQemuKernel ();
+  // TryRunningQemuKernel ();
   DEBUG ((DEBUG_INFO, "%a:%d:%a: continue with alternative BootOptions after kernel boot failed\n", __FILE__, __LINE__, __FUNCTION__));
 
   //
