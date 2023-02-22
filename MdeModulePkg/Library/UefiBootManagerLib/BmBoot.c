@@ -15,6 +15,8 @@ EFI_RAM_DISK_PROTOCOL                        *mRamDisk                  = NULL;
 EFI_BOOT_MANAGER_REFRESH_LEGACY_BOOT_OPTION  mBmRefreshLegacyBootOption = NULL;
 EFI_BOOT_MANAGER_LEGACY_BOOT                 mBmLegacyBoot              = NULL;
 
+STATIC kAFL_payload                          *g_kafl_payload;
+
 ///
 /// This GUID is used for an EFI Variable that stores the front device pathes
 /// for a partial device path that starts with the HD node.
@@ -1869,6 +1871,54 @@ EfiBootManagerBoot (
   }
   DEBUG_CODE_END ();
 
+  //
+  // kAFL: set up fuzzer here if BootOption Description contains "UEFI PXEv4"
+  //
+  CHAR16 PxeIdentifier[] = L"UEFI PXEv4\0";
+  CHAR16 *SubStrPos = StrStr(BootOption->Description, PxeIdentifier);
+  if (SubStrPos != NULL)
+  {
+    hprintf("[kAFL] PXEv4 network boot -> set up kAFL fuzzer\n");
+    UINTN payload_buf_size = PAYLOAD_MAX_SIZE;
+    UINT8 *payload_buffer = (UINT8 *)AllocateAlignedPages(payload_buf_size / EFI_PAGE_SIZE, EFI_PAGE_SIZE);
+    g_kafl_payload = (kAFL_payload*)payload_buffer;
+
+    // ensure payload is paged in?
+    ZeroMem(payload_buffer, payload_buf_size);
+
+    // initial handshake
+    kAFL_hypercall(HYPERCALL_KAFL_ACQUIRE, 0);
+    kAFL_hypercall(HYPERCALL_KAFL_RELEASE, 0);
+
+    // get host configuration
+    volatile host_config_t host_config;
+    kAFL_hypercall(HYPERCALL_KAFL_GET_HOST_CONFIG, (UINTN)&host_config);
+
+    // check if host config is valid
+    if (host_config.host_magic != NYX_HOST_MAGIC ||
+        host_config.host_version != NYX_HOST_VERSION) {
+      hprintf("host_config magic/version mismatch!\n");
+      habort("GET_HOST_CNOFIG magic/version mismatch!\n");
+    }
+
+    if (PAYLOAD_MAX_SIZE < host_config.payload_buffer_size) {
+      habort("Insufficient guest payload buffer!\n");
+    }
+
+    // submit payload buffer address to HV
+    kAFL_hypercall(HYPERCALL_KAFL_GET_PAYLOAD, (UINT64)payload_buffer);
+
+    // submit agent config
+    volatile agent_config_t agent_config = {0};
+    agent_config.agent_magic = NYX_AGENT_MAGIC;
+    agent_config.agent_version = NYX_AGENT_VERSION;
+    agent_config.agent_tracing = 0; // trace by host!
+    agent_config.agent_ijon_tracing = 0; // no IJON
+    agent_config.agent_non_reload_mode = 1; // allow persistent
+    agent_config.coverage_bitmap_size = host_config.bitmap_size;
+    kAFL_hypercall(HYPERCALL_KAFL_SET_AGENT_CONFIG, (UINTN)&agent_config);
+  }
+
   ImageHandle       = NULL;
   RamDiskDevicePath = NULL;
   if (DevicePathType (BootOption->FilePath) != BBS_DEVICE_PATH) {
@@ -1880,10 +1930,15 @@ EfiBootManagerBoot (
     // BmGetNextLoadOptionBuffer() allocates a buffer for a load option image (according to PE header?),
     // fills it with the PE image content (i.e. OS loader image) at the BootOption's FilePath and
     // returns address & size of the buffer that holds the PE image (i.e. OS loader).
-    //? is this load performed via virtio?
     //
-    DEBUG ((DEBUG_INFO, "%a:%d:%a filling FileBuffer\n", __FILE__, __LINE__, __FUNCTION__));
-    FileBuffer = BmGetNextLoadOptionBuffer (LoadOptionTypeBoot, BootOption->FilePath, &FilePath, &FileSize);
+    // fuzzing: ignore BmGetNextLoadOptionBuffer() and inject input into FileBuffer directly
+    // FileBuffer = BmGetNextLoadOptionBuffer (LoadOptionTypeBoot, BootOption->FilePath, &FilePath, &FileSize);
+    kAFL_hypercall(HYPERCALL_KAFL_NEXT_PAYLOAD, 0);
+    FileSize = g_kafl_payload->size;
+    FileBuffer = AllocatePool(FileSize);
+    CopyMem(FileBuffer, g_kafl_payload->data, FileSize);
+    kAFL_hypercall(HYPERCALL_KAFL_ACQUIRE, 0);
+
     if (FileBuffer != NULL) {
       RamDiskDevicePath = BmGetRamDiskDevicePath (FilePath);
 
@@ -1913,6 +1968,13 @@ EfiBootManagerBoot (
     }
 
     if (EFI_ERROR (Status)) {
+      // kAFL_hypercall(HYPERCALL_KAFL_RELEASE, 0);
+      if (g_kafl_payload->size <= 256) {
+      // signal STARVED input
+        kAFL_hypercall(HYPERCALL_KAFL_RELEASE, 1);
+      } else {
+        kAFL_hypercall(HYPERCALL_KAFL_RELEASE, 0);
+      }
       //
       // With EFI_SECURITY_VIOLATION retval, the Image was loaded and an ImageHandle was created
       // with a valid EFI_LOADED_IMAGE_PROTOCOL, but the image can not be started right now.
