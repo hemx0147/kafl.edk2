@@ -1521,9 +1521,8 @@ PlatformBootManagerAfterConsole (
   //
   // Process QEMU's -kernel command line option
   //
-  DEBUG ((DEBUG_INFO, "%a:%d:%a: try run Qemu kernel\n", __FILE__, __LINE__, __FUNCTION__));
-  TryRunningQemuKernel ();
-  DEBUG ((DEBUG_INFO, "%a:%d:%a: continue with alternative BootOptions after kernel boot failed\n", __FILE__, __LINE__, __FUNCTION__));
+  DEBUG ((DEBUG_INFO, "[kAFL] prevent linux kernel from being booted\n"));
+  // TryRunningQemuKernel ();
 
   //
   // The following code is not reached when kernel was booted successfully
@@ -1541,10 +1540,10 @@ PlatformBootManagerAfterConsole (
   //
   // Register UEFI Shell
   //
-  DEBUG ((DEBUG_INFO, "%a:%d:%a: register UEFI Shell\n", __FILE__, __LINE__, __FUNCTION__));
-  PlatformRegisterFvBootOption (
-    &gUefiShellFileGuid, L"EFI Internal Shell", LOAD_OPTION_ACTIVE
-    );
+  DEBUG ((DEBUG_INFO, "[kAFL]: prevent internal UEFI Shell from being booted\n"));
+  // PlatformRegisterFvBootOption (
+  //   &gUefiShellFileGuid, L"EFI Internal Shell", LOAD_OPTION_ACTIVE
+  //   );
 
   DEBUG ((DEBUG_INFO, "%a:%d:%a: remove stale FV file options\n", __FILE__, __LINE__, __FUNCTION__));
   RemoveStaleFvFileOptions ();
