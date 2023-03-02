@@ -69,24 +69,20 @@ EfiBootManagerConnectAll (
   VOID
   )
 {
-  DEBUG ((DEBUG_INFO, "%a:%d:%a is called\n", __FILE__, __LINE__, __FUNCTION__));
   //
   // Connect the platform console first
   //
-  DEBUG ((DEBUG_INFO, "%a:%d:%a connect default consoles\n", __FILE__, __LINE__, __FUNCTION__));
   EfiBootManagerConnectAllDefaultConsoles ();
 
   //
   // Generic way to connect all the drivers
   //
-  DEBUG ((DEBUG_INFO, "%a:%d:%a connect drivers to controllers\n", __FILE__, __LINE__, __FUNCTION__));
   BmConnectAllDriversToAllControllers ();
 
   //
   // Here we have the assumption that we have already had
   // platform default console
   //
-  DEBUG ((DEBUG_INFO, "%a:%d:%a connect default consoles... again?\n", __FILE__, __LINE__, __FUNCTION__));
   EfiBootManagerConnectAllDefaultConsoles ();
 }
 

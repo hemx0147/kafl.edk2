@@ -1286,8 +1286,6 @@ BmGetNextLoadOptionBuffer (
   UINT32                                AuthenticationStatus;
   EFI_DEVICE_PATH_PROTOCOL              *RamDiskDevicePath;
 
-  DEBUG ((DEBUG_INFO, "[Bds] %a:%d: %a is called\n", __FILE__, __LINE__, __FUNCTION__));
-
   LocalFileSize = 0;
   FileBuffer  = NULL;
   CurFullPath = *FullPath;

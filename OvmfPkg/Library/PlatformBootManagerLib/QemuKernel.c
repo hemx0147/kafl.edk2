@@ -22,9 +22,6 @@ TryRunningQemuKernel (
   EFI_STATUS                Status;
   EFI_HANDLE                KernelImageHandle;
 
-  DEBUG ((DEBUG_INFO, "%a:%d: %a is called\n", __FILE__, __LINE__, __FUNCTION__));
-
-  DEBUG ((DEBUG_INFO, "%a:%d:%a load kernel image\n", __FILE__, __LINE__, __FUNCTION__));
   Status = QemuLoadKernelImage (&KernelImageHandle);
   if (EFI_ERROR (Status)) {
     return Status;
@@ -33,7 +30,6 @@ TryRunningQemuKernel (
   //
   // Signal the EVT_SIGNAL_READY_TO_BOOT event
   //
-  DEBUG ((DEBUG_INFO, "%a:%d:%a signal event ReadyToBoot\n", __FILE__, __LINE__, __FUNCTION__));
   EfiSignalEventReadyToBoot();
 
   REPORT_STATUS_CODE (EFI_PROGRESS_CODE,
@@ -55,7 +51,6 @@ TryRunningQemuKernel (
       Status));
   }
 
-  DEBUG ((DEBUG_INFO, "%a:%d:%a unload kernel image after start failed\n", __FILE__, __LINE__, __FUNCTION__));
   QemuUnloadKernelImage (KernelImageHandle);
 
   return Status;

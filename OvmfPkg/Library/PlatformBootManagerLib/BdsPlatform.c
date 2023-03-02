@@ -1420,7 +1420,7 @@ PlatformBdsConnectSequence (
     //
     // Just use the simple policy to connect all devices
     //
-    DEBUG ((DEBUG_INFO, "%a:%d:%a calling EfiBootManagerConnectAll\n", __FILE__, __LINE__, __FUNCTION__));
+    DEBUG ((DEBUG_INFO, "EfiBootManagerConnectAll\n"));
     EfiBootManagerConnectAll ();
   }
 }
@@ -1478,7 +1478,7 @@ PlatformBootManagerAfterConsole (
 {
   EFI_BOOT_MODE                      BootMode;
 
-  DEBUG ((DEBUG_INFO, "PlatformBootManagerLib %a is called\n", __FUNCTION__));
+  DEBUG ((DEBUG_INFO, "PlatformBootManagerAfterConsole\n"));
 
   if (PcdGetBool (PcdOvmfFlashVariablesEnable)) {
     DEBUG ((DEBUG_INFO, "PlatformBdsPolicyBehavior: not restoring NvVars "
@@ -1531,10 +1531,8 @@ PlatformBootManagerAfterConsole (
   //
   // Perform some platform specific connect sequence
   //
-  DEBUG ((DEBUG_INFO, "%a:%d:%a: perform platform-specific connect sequence\n", __FILE__, __LINE__, __FUNCTION__));
   PlatformBdsConnectSequence ();
 
-  DEBUG ((DEBUG_INFO, "%a:%d:%a: refresh all BootOptions\n", __FILE__, __LINE__, __FUNCTION__));
   EfiBootManagerRefreshAllBootOption ();
 
   //
@@ -1545,13 +1543,9 @@ PlatformBootManagerAfterConsole (
   //   &gUefiShellFileGuid, L"EFI Internal Shell", LOAD_OPTION_ACTIVE
   //   );
 
-  DEBUG ((DEBUG_INFO, "%a:%d:%a: remove stale FV file options\n", __FILE__, __LINE__, __FUNCTION__));
   RemoveStaleFvFileOptions ();
-
-  DEBUG ((DEBUG_INFO, "%a:%d:%a: set BootOrder from Qemu\n", __FILE__, __LINE__, __FUNCTION__));
   SetBootOrderFromQemu ();
 
-  DEBUG ((DEBUG_INFO, "%a:%d:%a: platform boot manager print ScRegisterHandler\n", __FILE__, __LINE__, __FUNCTION__));
   PlatformBmPrintScRegisterHandler ();
 }
 
