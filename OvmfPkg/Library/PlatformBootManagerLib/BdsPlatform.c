@@ -1538,7 +1538,7 @@ PlatformBootManagerAfterConsole (
   //
   // Register UEFI Shell
   //
-  DEBUG ((DEBUG_INFO, "[kAFL]: prevent internal UEFI Shell from being booted\n"));
+  DEBUG ((DEBUG_INFO, "[kAFL]: prevent internal UEFI Shell from being added as BootOption\n"));
   // PlatformRegisterFvBootOption (
   //   &gUefiShellFileGuid, L"EFI Internal Shell", LOAD_OPTION_ACTIVE
   //   );

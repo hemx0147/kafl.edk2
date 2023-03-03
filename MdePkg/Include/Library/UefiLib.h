@@ -35,6 +35,16 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 
 #include <Library/BaseLib.h>
 
+/**
+  Convenience function to print a buffer.
+*/
+VOID
+EFIAPI
+DumpBuffer (
+  IN UINT8 *Buf,
+  IN UINTN BufSize
+  );
+
 ///
 /// Unicode String Table
 ///

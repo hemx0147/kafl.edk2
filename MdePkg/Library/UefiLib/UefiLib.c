@@ -14,6 +14,35 @@
 #include "UefiLibInternal.h"
 
 /**
+  Convenience function to print a buffer.
+*/
+VOID
+EFIAPI
+DumpBuffer (
+  IN UINT8 *Buf,
+  IN UINTN BufSize
+  )
+{
+  UINTN Pos;
+
+  DEBUG ((DEBUG_INFO, "Dump Buffer 0x%p of Size %d (0x%x):", Buf, BufSize, BufSize));
+  for (Pos = 0; Pos < BufSize; Pos++)
+  {
+    if (Pos % 32 == 0)
+    {
+      DEBUG ((DEBUG_INFO, "\n\t"));
+    }
+    else
+    {
+      DEBUG ((DEBUG_INFO, " "));
+    }
+    DEBUG ((DEBUG_INFO, "%02x", Buf[Pos]));
+  }
+  DEBUG ((DEBUG_INFO, "\n"));
+}
+
+
+/**
   Empty constructor function that is required to resolve dependencies between
   libraries.
 

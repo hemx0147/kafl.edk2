@@ -397,7 +397,7 @@ UnitTestDebugAssert (
 #endif
 
 // print file, line & function of currently executed code
-#define DEBUG_FCALL DEBUG((DEBUG_INFO, "%a:%d:%a called\n", __FILE__, __LINE__, __FUNCTION__))
+#define DEBUG_FCALL DEBUG((DEBUG_INFO, "%a:%d:%a\n", __FILE__, __LINE__, __FUNCTION__))
 
 /**
   Macro that calls DebugAssert() if an EFI_STATUS evaluates to an error code.
