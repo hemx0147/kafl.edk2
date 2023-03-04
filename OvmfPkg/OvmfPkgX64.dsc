@@ -270,6 +270,7 @@
   TdxLib|MdePkg/Library/TdxLib/TdxLib.inf
   TdxProbeLib|MdePkg/Library/TdxProbeLib/TdxProbeLib.inf
   TdxMpLib|OvmfPkg/Library/TdxMpLib/TdxMpLib.inf
+  KaflAgentLib|OvmfPkg/Library/KaflAgentLib/KaflAgentLib.inf
 
 [LibraryClasses.common.SEC]
   TimerLib|OvmfPkg/Library/AcpiTimerLib/BaseRomAcpiTimerLib.inf

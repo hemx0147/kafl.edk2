@@ -1,0 +1,28 @@
+#/** @file
+# Component description file for kAFL Fuzzing Agent
+#
+#**/
+
+[Defines]
+  INF_VERSION    = 0x00010005
+  BASE_NAME      = KaflAgentLib
+  FILE_GUID      = F42A85F7-5458-4D00-BEE2-000D98D45178
+  MODULE_TYPE    = BASE
+  VERSION_STRING = 1.0
+  LIBRARY_CLASS  = KaflAgentLib
+
+#
+# VALID_ARCHITECTURES = X64
+#
+
+[Sources]
+  KaflAgent.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  OvmfPkg/OvmfPkg.dec
+
+[LibraryClasses]
+  DebugLib
+  BaseMemoryLib
+  MemoryAllocationLib
