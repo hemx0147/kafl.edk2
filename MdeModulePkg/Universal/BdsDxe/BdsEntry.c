@@ -408,15 +408,17 @@ BootBootOptions (
     EfiBootManagerBoot (&BootOptions[Index]);
 
     //
+    // kAFL: prevent booting of Boot Manager menu
+    //
     // If the boot via Boot#### returns with a status of EFI_SUCCESS, platform firmware
     // supports boot manager menu, and if firmware is configured to boot in an
     // interactive mode, the boot manager will stop processing the BootOrder variable and
     // present a boot manager menu to the user.
     //
-    if ((BootManagerMenu != NULL) && (BootOptions[Index].Status == EFI_SUCCESS)) {
-      EfiBootManagerBoot (BootManagerMenu);
-      break;
-    }
+    // if ((BootManagerMenu != NULL) && (BootOptions[Index].Status == EFI_SUCCESS)) {
+    //   EfiBootManagerBoot (BootManagerMenu);
+    //   break;
+    // }
   }
 
   return (BOOLEAN) (Index < BootOptionCount);
@@ -1068,21 +1070,28 @@ BdsEntry (
     EfiBootManagerFreeLoadOption (&BootManagerMenu);
   }
 
-  if (!BootSuccess) {
-    if (PcdGetBool (PcdPlatformRecoverySupport)) {
-      LoadOptions = EfiBootManagerGetLoadOptions (&LoadOptionCount, LoadOptionTypePlatformRecovery);
-      ProcessLoadOptions (LoadOptions, LoadOptionCount);
-      EfiBootManagerFreeLoadOptions (LoadOptions, LoadOptionCount);
-    } else {
-      //
-      // When platform recovery is not enabled, still boot to platform default file path.
-      //
-      EfiBootManagerProcessLoadOption (&PlatformDefaultBootOption);
-    }
-  }
-  EfiBootManagerFreeLoadOption (&PlatformDefaultBootOption);
+  //
+  // kAFL: prevent platform recovery from being booted
+  //
+  // if (!BootSuccess) {
+  //   if (PcdGetBool (PcdPlatformRecoverySupport)) {
+  //     LoadOptions = EfiBootManagerGetLoadOptions (&LoadOptionCount, LoadOptionTypePlatformRecovery);
+  //     ProcessLoadOptions (LoadOptions, LoadOptionCount);
+  //     EfiBootManagerFreeLoadOptions (LoadOptions, LoadOptionCount);
+  //   } else {
+  //     //
+  //     // When platform recovery is not enabled, still boot to platform default file path.
+  //     //
+  //     EfiBootManagerProcessLoadOption (&PlatformDefaultBootOption);
+  //   }
+  // }
+  // EfiBootManagerFreeLoadOption (&PlatformDefaultBootOption);
 
   DEBUG ((EFI_D_ERROR, "[Bds] Unable to boot!\n"));
+  //
+  // kAFL: abort execution before entering deadloop
+  //
+  habort("stop execution before entering unable to boot CPU deadloop.\n");
   PlatformBootManagerUnableToBoot ();
   CpuDeadLoop ();
 }

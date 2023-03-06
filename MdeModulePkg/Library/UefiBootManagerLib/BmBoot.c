@@ -1984,8 +1984,7 @@ EfiBootManagerBoot (
   // Custom BootOption on block device passed through qemu is started here
   //
   DEBUG ((DEBUG_INFO, "Booting custom BootOption '%s' (Boot%04X) on passed blockdevice\n", BootOption->Description, BootOption->OptionNumber));
-  habort("don't need to boot further\n");
-  // Status = gBS->StartImage (ImageHandle, &BootOption->ExitDataSize, &BootOption->ExitData);
+  Status = gBS->StartImage (ImageHandle, &BootOption->ExitDataSize, &BootOption->ExitData);
   DEBUG ((DEBUG_INFO | DEBUG_LOAD, "Image Return Status = %r\n", Status));
   BootOption->Status = Status;
 
