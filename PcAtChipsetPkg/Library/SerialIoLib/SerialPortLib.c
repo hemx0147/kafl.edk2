@@ -12,7 +12,7 @@
 
 #define KAFL_HPRINTF_SERIAL
 #ifdef KAFL_HPRINTF_SERIAL
-#include <Library/NyxHypercalls.h>
+#include <Library/KaflAgentLib.h>
 #endif
 
 
@@ -158,7 +158,7 @@ SerialPortWrite (
     IoWrite8 ((UINT16) gUartBase, *Buffer++);
   }
 #else
-  kAFL_hypercall(HYPERCALL_KAFL_PRINTF, (UINT64)Buffer);
+  kafl_hprintf((CHAR8 *)Buffer);
 #endif
 
   return Result;

@@ -410,6 +410,7 @@
   PcdLib
   DebugLib
   BaseMemoryLib
+  KaflAgentLib
 
 [Pcd]
   gEfiMdePkgTokenSpaceGuid.PcdMaximumLinkedListLength      ## SOMETIMES_CONSUMES
