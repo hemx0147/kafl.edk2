@@ -9,6 +9,7 @@
 #include <Base.h>
 #include <Library/DebugLib.h>
 #include <Uefi/UefiBaseType.h>  // EFI_PAGE_MASK
+#include <Library/PrintLib.h>   // AsciiVSPrint, AsciiVBPrint
 #include "NyxHypercalls.h"
 
 enum KaflEvent {
@@ -40,7 +41,8 @@ kafl_fuzz_event(
 VOID
 EFIAPI
 kafl_hprintf(
-  IN  CONST CHAR8 *Msg
+  IN  CONST CHAR8   *Format,
+  ...
 );
 
 #endif

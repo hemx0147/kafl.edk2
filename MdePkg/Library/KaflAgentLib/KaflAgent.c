@@ -4,6 +4,11 @@
 #define pr_warn(fmt, ...) \
   DEBUG ((DEBUG_WARN, pr_fmt(fmt), ##__VA_ARGS__))
 
+//
+// Define the maximum debug and assert message length that this library supports
+//
+#define MAX_DEBUG_MESSAGE_LENGTH  0x100
+
 
 BOOLEAN AgentInitialized = FALSE;
 BOOLEAN FuzzEnabled = FALSE;
@@ -55,8 +60,7 @@ STATIC VOID EFIAPI kafl_agent_setrange(UINTN Id, VOID *Start, VOID *End)
   Range[1] = ((UINTN)End + (UINTN)EFI_PAGE_SIZE - 1) & (UINTN)EFI_PAGE_MASK;
   Range[2] = Id;
 
-  // kafl_hprintf("Setting range %lu: %lx-%lx\n", Range[2], Range[0], Range[1]);
-  kafl_hprintf("Setting range\n");
+  kafl_hprintf("Setting range %lu: %lx-%lx\n", Range[2], Range[0], Range[1]);
   kAFL_hypercall(HYPERCALL_KAFL_RANGE_SUBMIT, (UINTN)Range);
 }
 
@@ -66,23 +70,57 @@ STATIC VOID EFIAPI kafl_habort(CHAR8 *Msg)
 }
 
 // dedicated assert for raising kAFL/harness level issues
-      // kafl_hprintf("kAFL ASSERT at %s:%d, %s\n", __FILE__, __LINE__, #Exp);
 #define KAFL_ASSERT(Exp) \
   do { \
     if (!(Exp)) { \
-      kafl_hprintf("kAFL ASSERT at <here>\n"); \
+      kafl_hprintf("kAFL ASSERT at %s:%d, %s\n", __FILE__, __LINE__, #Exp); \
       kafl_habort("assertion fail (see hprintf logs)"); \
     } \
   } while (0)
 
-// TODO: implement VA list functionality
+STATIC VOID hprintf_marker (
+  IN  CONST CHAR8   *Format,
+  IN  VA_LIST       VaListMarker,
+  IN  BASE_LIST     BaseListMarker
+  )
+{
+  CHAR8    Buffer[MAX_DEBUG_MESSAGE_LENGTH];
+
+  //
+  // If Format is NULL, then ASSERT().
+  //
+  if (Format == NULL)
+  {
+    kafl_habort("hprintf format is NULL\n");
+  }
+
+  //
+  // Convert the DEBUG() message to an ASCII String
+  //
+  if (BaseListMarker == NULL) {
+    AsciiVSPrint (Buffer, sizeof (Buffer), Format, VaListMarker);
+  } else {
+    AsciiBSPrint (Buffer, sizeof (Buffer), Format, BaseListMarker);
+  }
+
+  //
+  // Print string with kAFL hprintf
+  //
+  kAFL_hypercall(HYPERCALL_KAFL_PRINTF, (UINTN)Buffer);
+}
+
 VOID
 EFIAPI
 kafl_hprintf(
-  IN  CONST CHAR8 *Msg
+  IN  CONST CHAR8   *Format,
+  ...
   )
 {
-  kAFL_hypercall(HYPERCALL_KAFL_PRINTF, (UINTN)Msg);
+  VA_LIST Marker;
+
+  VA_START (Marker, Format);
+  hprintf_marker (Format, Marker, NULL);
+  VA_END (Marker);
 }
 
 STATIC VOID EFIAPI kafl_agent_init(VOID)
