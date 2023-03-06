@@ -9,7 +9,6 @@
 //
 #define MAX_DEBUG_MESSAGE_LENGTH  0x100
 
-
 BOOLEAN AgentInitialized = FALSE;
 BOOLEAN FuzzEnabled = FALSE;
 
@@ -52,10 +51,27 @@ kafl_raise_kasan (
   kAFL_hypercall(HYPERCALL_KAFL_KASAN, 0);
 }
 
-STATIC VOID EFIAPI kafl_agent_setrange(UINTN Id, VOID *Start, VOID *End)  __attribute__ ((unused));
-STATIC VOID EFIAPI kafl_agent_setrange(UINTN Id, VOID *Start, VOID *End)
+STATIC
+VOID
+EFIAPI
+kafl_agent_setrange (
+  UINTN   Id,
+  VOID    *Start,
+  VOID    *End
+  )  __attribute__ ((unused));
+
+STATIC
+VOID
+EFIAPI
+kafl_agent_setrange (
+  UINTN   Id,
+  VOID    *Start,
+  VOID    *End
+  )
 {
-  UINTN Range[3];
+  // TODO: use correct type for uintptr_t (maybe not UINTN?)
+  UINTN   Range[3];
+
   Range[0] = (UINTN)Start & (UINTN)EFI_PAGE_MASK;
   Range[1] = ((UINTN)End + (UINTN)EFI_PAGE_SIZE - 1) & (UINTN)EFI_PAGE_MASK;
   Range[2] = Id;
@@ -64,7 +80,12 @@ STATIC VOID EFIAPI kafl_agent_setrange(UINTN Id, VOID *Start, VOID *End)
   kAFL_hypercall(HYPERCALL_KAFL_RANGE_SUBMIT, (UINTN)Range);
 }
 
-STATIC VOID EFIAPI kafl_habort(CHAR8 *Msg)
+STATIC
+VOID
+EFIAPI
+kafl_habort (
+  CHAR8   *Msg
+  )
 {
   kAFL_hypercall(HYPERCALL_KAFL_USER_ABORT, (UINTN)Msg);
 }
@@ -78,13 +99,15 @@ STATIC VOID EFIAPI kafl_habort(CHAR8 *Msg)
     } \
   } while (0)
 
-STATIC VOID hprintf_marker (
+STATIC
+VOID
+hprintf_marker (
   IN  CONST CHAR8   *Format,
   IN  VA_LIST       VaListMarker,
   IN  BASE_LIST     BaseListMarker
   )
 {
-  CHAR8    Buffer[MAX_DEBUG_MESSAGE_LENGTH];
+  CHAR8   Buffer[MAX_DEBUG_MESSAGE_LENGTH];
 
   //
   // If Format is NULL, then ASSERT().
@@ -95,7 +118,7 @@ STATIC VOID hprintf_marker (
   }
 
   //
-  // Convert the DEBUG() message to an ASCII String
+  // Convert the hprintf() message to an ASCII String
   //
   if (BaseListMarker == NULL) {
     AsciiVSPrint (Buffer, sizeof (Buffer), Format, VaListMarker);
@@ -111,32 +134,42 @@ STATIC VOID hprintf_marker (
 
 VOID
 EFIAPI
-kafl_hprintf(
+kafl_hprintf (
   IN  CONST CHAR8   *Format,
   ...
   )
 {
-  VA_LIST Marker;
+  VA_LIST   Marker;
 
   VA_START (Marker, Format);
   hprintf_marker (Format, Marker, NULL);
   VA_END (Marker);
 }
 
-STATIC VOID EFIAPI kafl_agent_init(VOID)
+STATIC
+VOID
+EFIAPI
+kafl_agent_init (
+  VOID
+  )
 {
   return;
 }
 
-STATIC VOID EFIAPI kafl_agent_done(VOID)
+STATIC
+VOID
+EFIAPI
+kafl_agent_done (
+  VOID
+  )
 {
   return;
 }
 
 VOID
 EFIAPI
-kafl_fuzz_event(
-  IN  enum KaflEvent E
+kafl_fuzz_event (
+  IN  enum KaflEvent  E
   )
 {
   // pre-init actions
