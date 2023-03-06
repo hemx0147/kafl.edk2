@@ -31,6 +31,7 @@
 
 [LibraryClasses]
   SafeIntLib|MdePkg/Library/BaseSafeIntLib/BaseSafeIntLib.inf
+  KaflAgentLib|MdePkg/Library/KaflAgentLib/KaflAgentLib.inf
 
 [Components]
   MdePkg/Library/UefiFileHandleLib/UefiFileHandleLib.inf
@@ -125,6 +126,8 @@
 
   MdePkg/Library/StandaloneMmDriverEntryPoint/StandaloneMmDriverEntryPoint.inf
   MdePkg/Library/StandaloneMmServicesTableLib/StandaloneMmServicesTableLib.inf
+
+  MdePkg/Library/KaflAgentLib/KaflAgentLib.inf
 
 [Components.IA32, Components.X64, Components.ARM, Components.AARCH64]
   #

@@ -191,6 +191,7 @@
   LoadLinuxLib|OvmfPkg/Library/LoadLinuxLib/LoadLinuxLib.inf
   MemEncryptSevLib|OvmfPkg/Library/BaseMemEncryptSevLib/DxeMemEncryptSevLib.inf
   MemEncryptTdxLib|OvmfPkg/Library/BaseMemEncryptTdxLib/BaseMemEncryptTdxLib.inf
+  KaflAgentLib|MdePkg/Library/KaflAgentLib/KaflAgentLib.inf
   
 !if $(SMM_REQUIRE) == FALSE
   LockBoxLib|OvmfPkg/Library/LockBoxLib/LockBoxBaseLib.inf
@@ -270,7 +271,6 @@
   TdxLib|MdePkg/Library/TdxLib/TdxLib.inf
   TdxProbeLib|MdePkg/Library/TdxProbeLib/TdxProbeLib.inf
   TdxMpLib|OvmfPkg/Library/TdxMpLib/TdxMpLib.inf
-  KaflAgentLib|OvmfPkg/Library/KaflAgentLib/KaflAgentLib.inf
 
 [LibraryClasses.common.SEC]
   TimerLib|OvmfPkg/Library/AcpiTimerLib/BaseRomAcpiTimerLib.inf

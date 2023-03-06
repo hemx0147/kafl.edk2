@@ -257,6 +257,8 @@
   #
   UnitTestHostBaseLib|Test/UnitTest/Include/Library/UnitTestHostBaseLib.h
 
+  KaflAgentLib|Include/Library/KaflAgentLib.h
+
 [LibraryClasses.IA32, LibraryClasses.X64]
   ##  @libraryclass  Abstracts both S/W SMI generation and detection.
   ##
