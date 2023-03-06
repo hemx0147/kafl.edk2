@@ -72,7 +72,7 @@ CommonExceptionHandler (
   DumpImageAndCpuContent (ExceptionType, SystemContext);
 
 #ifdef KAFL_ACTIVATE
-  kAFL_hypercall(HYPERCALL_KAFL_KASAN, 0);
+  kafl_fuzz_event(KAFL_KASAN);
 #endif
 
   //

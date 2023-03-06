@@ -313,7 +313,7 @@ DebugAssert (
     //
 #ifdef KAFL_ACTIVATE
 	/* fuzz test return OK - no deadloop / breakpoint */
-	kAFL_hypercall(HYPERCALL_KAFL_RELEASE, 0);
+  kafl_fuzz_event(KAFL_DONE);
 #endif
     if ((PcdGet8 (PcdDebugPropertyMask) & DEBUG_PROPERTY_ASSERT_BREAKPOINT_ENABLED) != 0) {
       CpuBreakpoint ();
@@ -329,7 +329,7 @@ DebugAssert (
   }
 #ifdef KAFL_ACTIVATE
 	/* fuzz test return OK - no deadloop / breakpoint */
-	kAFL_hypercall(HYPERCALL_KAFL_RELEASE, 0);
+  kafl_fuzz_event(KAFL_DONE);
 #endif
 }
 

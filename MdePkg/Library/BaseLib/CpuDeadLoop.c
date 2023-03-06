@@ -30,7 +30,7 @@ CpuDeadLoop (
 
 #ifdef KAFL_ACTIVATE
   /* fuzz test return OK */
-  kAFL_hypercall(HYPERCALL_KAFL_RELEASE, 0);
+  kafl_fuzz_event(KAFL_DONE);
 #endif
   for (Index = 0; Index == 0;);
 }

@@ -599,8 +599,9 @@ SerialPortWrite (
   )
 {
 #ifdef KAFL_ACTIVATE
-  hprintf(Buffer);
-  habort("Target is using unexpected SerialPort driver");
+  kafl_hprintf(Buffer);
+  kafl_hprintf("Target is using unexpected SerialPort driver");
+  kafl_fuzz_event(KAFL_ABORT);
   return 0;
 #else
   UINTN  SerialRegisterBase;
