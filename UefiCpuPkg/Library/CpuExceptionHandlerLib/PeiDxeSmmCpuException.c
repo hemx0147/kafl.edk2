@@ -141,7 +141,7 @@ CommonExceptionHandlerWorker (
     //
     DumpImageAndCpuContent (ExceptionType, SystemContext);
 
-#ifdef KAFL_ENABLE
+#ifdef KAFL_ACTIVATE
     kAFL_hypercall(HYPERCALL_KAFL_PANIC, 0);
 #endif
 

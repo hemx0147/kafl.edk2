@@ -36,7 +36,7 @@ __stack_chk_fail (
 
   DEBUG ((DEBUG_ERROR, "STACK FAULT: Buffer Overflow in function %a.\n", __builtin_return_address(0)));
 
-#ifdef KAFL_ENABLE
+#ifdef KAFL_ACTIVATE
   hprintf("STACK FAULT: Buffer Overflow in function XXX\n");
   kAFL_hypercall(HYPERCALL_KAFL_PANIC, 0)
 #endif

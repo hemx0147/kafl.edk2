@@ -19,7 +19,7 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
  * Apparently we're supposed to define a Pcd option via various files..
  */
 #if   defined (MDE_CPU_IA32) || defined (MDE_CPU_X64)
-#define KAFL_ENABLE
+#define KAFL_ACTIVATE
 #include <Library/KaflAgentLib.h>
 #endif
 

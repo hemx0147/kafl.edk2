@@ -311,7 +311,7 @@ DebugAssert (
     //
     // Generate a Breakpoint, DeadLoop, or NOP based on PCD settings
     //
-#ifdef KAFL_ENABLE
+#ifdef KAFL_ACTIVATE
 	/* fuzz test return OK - no deadloop / breakpoint */
 	kAFL_hypercall(HYPERCALL_KAFL_RELEASE, 0);
 #endif
@@ -327,7 +327,7 @@ DebugAssert (
                 Description
                 );
   }
-#ifdef KAFL_ENABLE
+#ifdef KAFL_ACTIVATE
 	/* fuzz test return OK - no deadloop / breakpoint */
 	kAFL_hypercall(HYPERCALL_KAFL_RELEASE, 0);
 #endif
