@@ -1091,7 +1091,8 @@ BdsEntry (
   //
   // kAFL: abort execution before entering deadloop
   //
-  habort("stop execution before entering unable to boot CPU deadloop.\n");
+  kafl_hprintf("kAFL: stop execution before entering unable to boot CPU deadloop\n");
+  kafl_fuzz_event(KAFL_ABORT);
   PlatformBootManagerUnableToBoot ();
   CpuDeadLoop ();
 }

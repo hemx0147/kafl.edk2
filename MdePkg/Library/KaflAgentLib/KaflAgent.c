@@ -1,4 +1,13 @@
+/** @file
+  kAFL fuzzing agent definitions
+
+**/
+
+#include <Library/DebugLib.h>
+#include <Library/PrintLib.h>       // AsciiVSPrint, AsciiVBPrint
+#include <Uefi/UefiBaseType.h>      // EFI_PAGE_MASK
 #include <Library/KaflAgentLib.h>
+#include "NyxHypercalls.h"
 
 #define pr_fmt(fmt) "kAFL: " fmt
 #define pr_warn(fmt, ...) \
@@ -153,6 +162,7 @@ kafl_agent_init (
   VOID
   )
 {
+  // TODO: implement me
   return;
 }
 
@@ -163,6 +173,7 @@ kafl_agent_done (
   VOID
   )
 {
+  // TODO: implement me
   return;
 }
 
