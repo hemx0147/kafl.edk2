@@ -20,36 +20,35 @@
 //
 #define MAX_DEBUG_MESSAGE_LENGTH  0x100
 
-BOOLEAN AgentInitialized = FALSE;
-BOOLEAN FuzzEnabled = FALSE;
+BOOLEAN agent_initialized = FALSE;
+BOOLEAN fuzz_enabled = FALSE;
 
-agent_config_t AgentConfig = { 0 };
-host_config_t HostConfig = { 0 };
+agent_config_t agent_config = { 0 };
+host_config_t host_config = { 0 };
 
 // AllocatePool/AllocatePages might not be available at early boot
 #define KAFL_ASSUME_ALLOC
 #ifdef KAFL_ASSUME_ALLOC
-UINTN PayloadBufferSize = 0;
-UINTN ObservedBufferSize = 0;
-UINT8 *PayloadBuffer = NULL;
-UINT8 *ObservedBuffer = NULL;
+UINTN payload_buffer_size = 0;
+UINTN observed_buffer_size = 0;
+UINT8 *payload_buffer = NULL;
+UINT8 *observed_buffer = NULL;
 #else
-UINTN PayloadBufferSize = PAYLOAD_MAX_SIZE;
-UINTN ObservedBufferSize = 2 * PAYLOAD_MAX_SIZE;
-UINT8 PayloadBuffer[PAYLOAD_MAX_SIZE] __attribute__((aligned(EFI_PAGE_SIZE)));
-UINT8 *ObservedBuffer[2 * PAYLOAD_MAX_SIZE] __attribute__((aligned(EFI_PAGE_SIZE)));
+UINTN payload_buffer_size = PAYLOAD_MAX_SIZE;
+UINT8 payload_buffer[PAYLOAD_MAX_SIZE] __attribute__((aligned(EFI_PAGE_SIZE)));
 #endif
 
-UINT8 *VeBuf;
-UINT32 VeNum;
-UINT32 VePos;
-UINT32 VeMis;
 
-UINT8 *ObBuf;
-UINT32 *ObNum;
-UINT32 *ObPos;
+UINT8 *ve_buf;
+UINT32 ve_num;
+UINT32 ve_pos;
+UINT32 ve_mis;
 
-CONST CHAR8 *KaflEventName[KAFL_EVENT_MAX] = {
+UINT8 *ob_buf;
+UINT32 ob_num;
+UINT32 ob_pos;
+
+CONST CHAR8 *kafl_event_name[KAFL_EVENT_MAX] = {
   "KAFL_ENABLE",
   "KAFL_START",
   "KAFL_ABORT",
@@ -190,11 +189,13 @@ kafl_agent_init (
   VOID
   )
 {
-  kAFL_payload *Payload = NULL;
-  UINTN PayloadBufferNumPages;
-  UINTN ObservedBufferNumPages;
+  kAFL_payload *payload = NULL;
+#ifdef KAFL_ASSUME_ALLOC
+  UINTN payload_buf_pages;
+  UINTN observed_buf_pages;
+#endif
 
-  if (AgentInitialized)
+  if (agent_initialized)
   {
     kafl_habort("Warning: Agent was already initialized!\n");
   }
@@ -212,39 +213,39 @@ kafl_agent_init (
   //
   // acquire host configuration
   //
-  kAFL_hypercall(HYPERCALL_KAFL_GET_HOST_CONFIG, (UINTN)&HostConfig);
-  kafl_hprintf("[HostConfig] bitmap sizes = <0x%x,0x%x>\n", HostConfig.bitmap_size, HostConfig.ijon_bitmap_size);
-  kafl_hprintf("[HostConfig] payload size = %dKB\n", HostConfig.payload_buffer_size/1024);
-  kafl_hprintf("[HostConfig] worker id = %02u\n", HostConfig.worker_id);
+  kAFL_hypercall(HYPERCALL_KAFL_GET_HOST_CONFIG, (UINTN)&host_config);
+  kafl_hprintf("[host_config] bitmap sizes = <0x%x,0x%x>\n", host_config.bitmap_size, host_config.ijon_bitmap_size);
+  kafl_hprintf("[host_config] payload size = %dKB\n", host_config.payload_buffer_size/1024);
+  kafl_hprintf("[host_config] worker id = %02u\n", host_config.worker_id);
 
   //
   // check if host config is valid
   //
-  if (HostConfig.host_magic != NYX_HOST_MAGIC ||
-      HostConfig.host_version != NYX_HOST_VERSION) {
-    hprintf("HostConfig magic/version mismatch!\n");
-    habort("GET_HOST_CNOFIG magic/version mismatch!\n");
+  if (host_config.host_magic != NYX_HOST_MAGIC ||
+      host_config.host_version != NYX_HOST_VERSION) {
+    kafl_hprintf("host_config magic/version mismatch!\n");
+    kafl_habort("GET_HOST_CNOFIG magic/version mismatch!\n");
   }
 
   //
   // allocate payload/observed buffer if AllocateAlignedPages is available
   //
 #ifdef KAFL_ASSUME_ALLOC
-  pr_warn("Using page allocation functions for payload buffer\n");
-  PayloadBufferSize = HostConfig.payload_buffer_size;
-  ObservedBufferSize = 2 * HostConfig.payload_buffer_size;
-  PayloadBufferNumPages = (PayloadBufferSize % EFI_PAGE_SIZE) == 0 ? PayloadBufferSize / EFI_PAGE_SIZE : (UINTN)(PayloadBufferSize / EFI_PAGE_SIZE) + 1;
-  ObservedBufferNumPages = (ObservedBufferSize % EFI_PAGE_SIZE) == 0 ? ObservedBufferSize / EFI_PAGE_SIZE : (UINTN)(ObservedBufferSize / EFI_PAGE_SIZE) + 1;
-  PayloadBuffer = (UINT8 *)AllocateAlignedPages(PayloadBufferNumPages, EFI_PAGE_SIZE);
-  ObservedBuffer = (UINT8 *)AllocateAlignedPages(ObservedBufferNumPages, EFI_PAGE_SIZE);
+  pr_warn("kAFL %a: Using page allocation functions for payload buffer\n", __FUNCTION__);
+  payload_buffer_size = host_config.payload_buffer_size;
+  observed_buffer_size = 2*host_config.payload_buffer_size;
+  payload_buf_pages = (payload_buffer_size % EFI_PAGE_SIZE) == 0 ? payload_buffer_size / EFI_PAGE_SIZE : ((UINTN)(payload_buffer_size / EFI_PAGE_SIZE)) + 1;
+  observed_buf_pages = (observed_buffer_size % EFI_PAGE_SIZE) == 0 ? observed_buffer_size / EFI_PAGE_SIZE : ((UINTN)(observed_buffer_size / EFI_PAGE_SIZE)) + 1;
+  payload_buffer = (UINT8 *)AllocateAlignedPages(payload_buf_pages, EFI_PAGE_SIZE);
+  observed_buffer = (UINT8 *)AllocateAlignedPages(observed_buf_pages, EFI_PAGE_SIZE);
 
-  if (!PayloadBuffer || !ObservedBuffer)
+  if (!payload_buffer)
   {
     kafl_habort("Failed to allocate host payload buffer!\n");
   }
 #else
   pr_warn("Page allocation functions unavailable, using stack for payload buffer instead\n");
-  if (HostConfig.payload_buffer_size > PAYLOAD_MAX_SIZE)
+  if (host_config.payload_buffer_size > PAYLOAD_MAX_SIZE)
   {
     kafl_habort("Insufficient payload buffer size!\n");
   }
@@ -253,27 +254,26 @@ kafl_agent_init (
   //
   // ensure payload is paged in
   //
-  // TODO: verify that payload buffer was written with correct value
-  SetMem(PayloadBuffer, PayloadBufferSize, 0xff);
-  SetMem(ObservedBuffer, ObservedBufferSize, 0xff);
+  SetMem(payload_buffer, payload_buffer_size, 0xff);
+  SetMem(observed_buffer, observed_buffer_size, 0xff);
 
   //
   // submit payload buffer address to HV
   //
-  kafl_hprintf("Submitting payload buffer address to hypervisor (%lx)\n", (UINTN)PayloadBuffer);
-  kAFL_hypercall(HYPERCALL_KAFL_GET_PAYLOAD, (UINTN)PayloadBuffer);
+  kafl_hprintf("kAFL %a: Submitting payload buffer address to hypervisor (0x%lx)\n", __FUNCTION__, (UINTN)payload_buffer);
+  kAFL_hypercall(HYPERCALL_KAFL_GET_PAYLOAD, (UINTN)payload_buffer);
 
   //
   // submit agent config
   //
   //? add other values from kafl.linux kafl-agent.c as well?
-  AgentConfig.agent_magic = NYX_AGENT_MAGIC;
-  AgentConfig.agent_version = NYX_AGENT_VERSION;
-  AgentConfig.agent_tracing = 0; // trace by host!
-  AgentConfig.agent_ijon_tracing = 0; // no IJON
-  AgentConfig.agent_non_reload_mode = 1; // allow persistent
-  AgentConfig.coverage_bitmap_size = HostConfig.bitmap_size;
-  kAFL_hypercall(HYPERCALL_KAFL_SET_AGENT_CONFIG, (UINTN)&AgentConfig);
+  agent_config.agent_magic = NYX_AGENT_MAGIC;
+  agent_config.agent_version = NYX_AGENT_VERSION;
+  agent_config.agent_tracing = 0; // trace by host!
+  agent_config.agent_ijon_tracing = 0; // no IJON
+  agent_config.agent_non_reload_mode = 1; // allow persistent
+  agent_config.coverage_bitmap_size = host_config.bitmap_size;
+  kAFL_hypercall(HYPERCALL_KAFL_SET_AGENT_CONFIG, (UINTN)&agent_config);
 
   //? set IntelPt range based on exported linker map symbols?
 
@@ -283,17 +283,15 @@ kafl_agent_init (
   kafl_hprintf("Starting kAFL loop...\n");
   kAFL_hypercall(HYPERCALL_KAFL_NEXT_PAYLOAD, 0);
 
-  Payload = (kAFL_payload *)PayloadBuffer;
-  VeBuf = Payload->data;
-  VeNum = Payload->size;
-  VePos = 0;
-  VeMis = 0;
-
-  //? what about kafl vanilla payload?
+  payload = (kAFL_payload *)payload_buffer;
+  ve_buf = payload->data;
+  ve_num = payload->size;
+  ve_pos = 0;
+  ve_mis = 0;
 
   // TODO: add kafl stats clear
 
-  AgentInitialized = TRUE;
+  agent_initialized = TRUE;
 
   //
   // start coverage tracing
@@ -308,40 +306,38 @@ kafl_agent_done (
   VOID
   )
 {
-  if (!AgentInitialized)
+  if (!agent_initialized)
   {
-    kafl_habort("Attempt to finish kAFL run but never initialized\n");
+    kafl_habort("kAFL: Attempt to finish kAFL run but never initialized\n");
   }
 
-  // TODO: add kafl agent stats
 
   //
   // Stop tracing and restore the snapshot for next round
   // Non-zero argument triggers stream_expand mutation in kAFL
   //
-  kafl_hprintf("Exiting kAFL loop...\n");
-  kAFL_hypercall(HYPERCALL_KAFL_RELEASE, VeMis*sizeof(VeBuf[0]));
+  kAFL_hypercall(HYPERCALL_KAFL_RELEASE, ve_mis*sizeof(ve_buf[0]));
 }
 
 VOID
 EFIAPI
 kafl_fuzz_event (
-  IN  enum KaflEvent  E
+  IN  enum kafl_event  e
   )
 {
   // pre-init actions
-  switch(E)
+  switch(e)
   {
     case KAFL_START:
       pr_warn("[*] Agent start!\n");
       kafl_agent_init();
-      FuzzEnabled = TRUE;
+      fuzz_enabled = TRUE;
       return;
     case KAFL_ENABLE:
       pr_warn("[*] Agent enable!\n");
       /* fallthrough */
     case KAFL_RESUME:
-      FuzzEnabled = TRUE;
+      fuzz_enabled = TRUE;
       return;
     case KAFL_DONE:
       return kafl_agent_done();
@@ -351,15 +347,15 @@ kafl_fuzz_event (
       break;
   }
 
-  if (!AgentInitialized)
+  if (!agent_initialized)
   {
-    pr_warn("Got event %s but not initialized?!\n", KaflEventName[E]);
+    pr_warn("Got event %s but not initialized?!\n", kafl_event_name[e]);
     return;
   }
 
   // post-init actions - abort if we see these before FuzzInitialized=TRUE
   // Use this table to selectively raise error conditions
-  switch(E)
+  switch(e)
   {
     case KAFL_KASAN:
     case KAFL_UBSAN:

@@ -8,7 +8,7 @@
 
 #include <Base.h>   // UEFI definitions
 
-enum KaflEvent {
+enum kafl_event {
   KAFL_ENABLE,
   KAFL_START,
   KAFL_ABORT,
@@ -28,10 +28,28 @@ enum KaflEvent {
   KAFL_EVENT_MAX
 };
 
+enum tdx_fuzz_loc {
+  TDX_FUZZ_MSR_READ,
+  TDX_FUZZ_MMIO_READ,
+  TDX_FUZZ_PORT_IN,
+  TDX_FUZZ_CPUID1,
+  TDX_FUZZ_CPUID2,
+  TDX_FUZZ_CPUID3,
+  TDX_FUZZ_CPUID4,
+  TDX_FUZZ_MSR_READ_ERR,
+  TDX_FUZZ_MSR_WRITE_ERR,
+  TDX_FUZZ_MAP_ERR,
+  TDX_FUZZ_PORT_IN_ERR,
+  TDX_FUZZ_VIRTIO,
+  TDX_FUZZ_RANDOM,  /* kAFL */
+  TDX_FUZZ_DEBUGFS, /* kAFL */
+  TDX_FUZZ_MAX
+};
+
 VOID
 EFIAPI
 kafl_fuzz_event (
-  IN  enum KaflEvent  E
+  IN  enum kafl_event  e
 );
 
 VOID
