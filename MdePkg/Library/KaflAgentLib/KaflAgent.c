@@ -3,6 +3,7 @@
 
 **/
 
+#include <Library/BaseLib.h>        // AsciiStrnCpyS
 #include <Library/DebugLib.h>
 #include <Library/PrintLib.h>       // AsciiVSPrint, AsciiVBPrint
 #include <Uefi/UefiBaseType.h>      // EFI_PAGE_MASK
@@ -26,6 +27,11 @@ BOOLEAN fuzz_enabled = FALSE;
 agent_config_t agent_config = { 0 };
 host_config_t host_config = { 0 };
 
+// abort at end of payload - otherwise we keep feeding unmodified input
+// which means we see coverage that is not represented in the payload
+BOOLEAN exit_at_eof = TRUE;
+kafl_dump_file_t dump_file = { 0 };
+
 // AllocatePool/AllocatePages might not be available at early boot
 #define KAFL_ASSUME_ALLOC
 #ifdef KAFL_ASSUME_ALLOC
@@ -38,6 +44,11 @@ UINTN payload_buffer_size = PAYLOAD_MAX_SIZE;
 UINT8 payload_buffer[PAYLOAD_MAX_SIZE] __attribute__((aligned(EFI_PAGE_SIZE)));
 #endif
 
+STATIC struct {
+  BOOLEAN dump_observed;
+  BOOLEAN dump_stats;
+  BOOLEAN dump_callers;
+} agent_flags;
 
 UINT8 *ve_buf;
 UINT32 ve_num;
@@ -86,36 +97,6 @@ kafl_raise_kasan (
 {
   kAFL_hypercall(HYPERCALL_KAFL_KASAN, 0);
 }
-
-STATIC
-VOID
-EFIAPI
-kafl_agent_setrange (
-  UINTN   Id,
-  VOID    *Start,
-  VOID    *End
-  )  __attribute__ ((unused));
-
-STATIC
-VOID
-EFIAPI
-kafl_agent_setrange (
-  UINTN   Id,
-  VOID    *Start,
-  VOID    *End
-  )
-{
-  // TODO: use correct type for uintptr_t (maybe not UINTN?)
-  UINTN   Range[3];
-
-  Range[0] = (UINTN)Start & (UINTN)EFI_PAGE_MASK;
-  Range[1] = ((UINTN)End + (UINTN)EFI_PAGE_SIZE - 1) & (UINTN)EFI_PAGE_MASK;
-  Range[2] = Id;
-
-  kafl_hprintf("Setting range %lu: %lx-%lx\n", Range[2], Range[0], Range[1]);
-  kAFL_hypercall(HYPERCALL_KAFL_RANGE_SUBMIT, (UINTN)Range);
-}
-
 STATIC
 VOID
 EFIAPI
@@ -166,6 +147,26 @@ hprintf_marker (
   // Print string with kAFL hprintf
   //
   kAFL_hypercall(HYPERCALL_KAFL_PRINTF, (UINTN)Buffer);
+}
+
+STATIC
+VOID
+EFIAPI
+kafl_dump_observed_payload (
+  IN  CHAR8 *filename,
+  IN  UINTN append,
+  IN  UINT8 *buf,
+  IN  UINT32  buflen
+  )
+{
+  STATIC CHAR8 fname_buf[128];
+  AsciiStrnCpyS(fname_buf, sizeof(fname_buf), filename, sizeof(fname_buf));
+  dump_file.file_name_str_ptr = (UINT64)fname_buf;
+  dump_file.data_ptr = (UINT64)buf;
+  dump_file.bytes = buflen;
+  dump_file.append = append;
+
+  kAFL_hypercall(HYPERCALL_KAFL_DUMP_FILE, (UINTN)&dump_file);
 }
 
 VOID
@@ -289,6 +290,30 @@ kafl_agent_init (
   ve_pos = 0;
   ve_mis = 0;
 
+  if (payload->flags.raw_data != 0)
+  {
+    kafl_hprintf("Runtime payload->flags=0x%04x\n", payload->flags.raw_data);
+    kafl_hprintf("\t dump_observed = %u\n",         payload->flags.dump_observed);
+    kafl_hprintf("\t dump_stats = %u\n",            payload->flags.dump_stats);
+    kafl_hprintf("\t dump_callers = %u\n",          payload->flags.dump_callers);
+
+    // debugfs cannot handle the bitfield..
+    agent_flags.dump_observed = payload->flags.dump_observed;
+    agent_flags.dump_stats    = payload->flags.dump_stats;
+    agent_flags.dump_callers  = payload->flags.dump_callers;
+
+    // dump modes are exclusive - sharing the observed_* and ob_* buffers
+    KAFL_ASSERT(!(agent_flags.dump_observed && agent_flags.dump_callers));
+    KAFL_ASSERT(!(agent_flags.dump_observed && agent_flags.dump_stats));
+    KAFL_ASSERT(!(agent_flags.dump_callers  && agent_flags.dump_stats));
+  }
+
+  if (agent_flags.dump_observed) {
+    ob_buf = observed_buffer;
+    ob_num = sizeof(observed_buffer);
+    ob_pos = 0;
+  }
+
   // TODO: add kafl stats clear
 
   agent_initialized = TRUE;
@@ -297,6 +322,31 @@ kafl_agent_init (
   // start coverage tracing
   //
   kAFL_hypercall(HYPERCALL_KAFL_ACQUIRE, 0);
+}
+
+STATIC
+VOID
+EFIAPI
+kafl_agent_stats (
+  VOID
+  )
+{
+  if (!agent_initialized)
+  {
+    // agent stats undefined
+    return;
+  }
+
+  // dump observed values
+  if (agent_flags.dump_observed)
+  {
+    kafl_hprintf("Dumping observed input...\n");
+    kafl_dump_observed_payload("payload_XXXXXX", FALSE, (UINT8*)ob_buf, ob_pos);
+  }
+
+  // TODO: dump location stats
+
+  // TODO: trace locations
 }
 
 STATIC
@@ -311,6 +361,7 @@ kafl_agent_done (
     kafl_habort("kAFL: Attempt to finish kAFL run but never initialized\n");
   }
 
+  kafl_agent_stats();
 
   //
   // Stop tracing and restore the snapshot for next round
@@ -318,6 +369,88 @@ kafl_agent_done (
   //
   kAFL_hypercall(HYPERCALL_KAFL_RELEASE, ve_mis*sizeof(ve_buf[0]));
 }
+
+STATIC
+UINTN
+EFIAPI
+_kafl_fuzz_buffer (
+  IN      VOID          *buf,
+  IN OUT  CONST UINTN   num_bytes
+  )
+{
+  kafl_hprintf("kAFL %a: Fuzz buf 0x%p Size %d (0x%x)\n", __FUNCTION__, buf, num_bytes, num_bytes);
+  kafl_hprintf("kAFL %a: ve_pos: %d, num_bytes: %d, ve_pos + num_bytes: %d, ve_num: %d\n", __FUNCTION__, ve_pos, num_bytes, ve_pos + num_bytes, ve_num);
+  if (ve_pos + num_bytes <= ve_num)
+  {
+    kafl_hprintf("kAFL %a: CopyMem ve_pos + ve_buf: %d, num_bytes: %d\n", __FUNCTION__, ve_pos + ve_buf, num_bytes);
+    CopyMem(buf, ve_buf + ve_pos, num_bytes);
+    ve_pos += num_bytes;
+    kafl_hprintf("kAFL %a: new ve_pos: %d\n", __FUNCTION__, ve_pos);
+    return num_bytes;
+  }
+
+  //
+  // insufficient fuzz buffer
+  //
+  ve_mis += num_bytes;
+  kafl_hprintf("kAFL %a: insufficient FuzBuf. ve_mis: %d\n", __FUNCTION__, ve_mis);
+  if (exit_at_eof && !agent_flags.dump_observed)
+  {
+    kafl_hprintf("kAFL %a: end here without return\n", __FUNCTION__);
+    /* no return */
+    kafl_agent_done();
+  }
+  return 0;
+}
+
+UINTN
+EFIAPI
+kafl_fuzz_buffer (
+  IN  VOID                    *fuzz_buf,
+  IN  CONST VOID              *orig_buf,
+  IN  CONST UINTN             *addr,
+  IN  CONST UINTN             num_bytes,
+  IN  CONST enum tdx_fuzz_loc type
+  )
+{
+  UINTN num_fuzzed = 0;
+
+  // TODO: add fuzz filter
+
+  // TODO: add trace tdx fuzz?
+
+  if (!fuzz_enabled)
+  {
+    return 0;
+  }
+
+  if (!agent_initialized)
+  {
+    kafl_hprintf("kAFL %a: init agent because not yet done before\n", __FUNCTION__);
+    kafl_agent_init();
+  }
+
+  // TODO: add agent flags dump callers
+
+  num_fuzzed = _kafl_fuzz_buffer(fuzz_buf, num_bytes);
+
+  if (agent_flags.dump_observed)
+  {
+    if (ob_pos + num_bytes > ob_num)
+    {
+      pr_warn("Warning: insufficient space in dump_payload\n");
+      kafl_agent_done();
+    }
+
+    CopyMem(ob_buf + ob_pos, fuzz_buf, num_fuzzed);
+    ob_pos += num_fuzzed;
+    CopyMem(ob_buf + ob_pos, orig_buf, num_bytes - num_fuzzed);
+    ob_pos += (num_bytes - num_fuzzed);
+  }
+
+  return num_fuzzed;
+}
+
 
 VOID
 EFIAPI

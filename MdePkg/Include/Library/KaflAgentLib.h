@@ -52,6 +52,16 @@ kafl_fuzz_event (
   IN  enum kafl_event  e
 );
 
+UINTN
+EFIAPI
+kafl_fuzz_buffer (
+  IN  OUT   VOID                *fuzz_buf,
+  IN  CONST VOID                *orig_buf,
+  IN  CONST UINTN               *addr,
+  IN  CONST UINTN               num_bytes,
+  IN  CONST enum tdx_fuzz_loc   type
+);
+
 VOID
 EFIAPI
 kafl_hprintf (
