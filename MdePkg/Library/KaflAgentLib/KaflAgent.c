@@ -409,6 +409,7 @@ _kafl_fuzz_buffer (
   IN OUT  CONST UINTN   num_bytes
   )
 {
+  // TODO: fuzzer kickstart value must be at least num_bytes larger, otherwise fuzzer won't work
   kafl_hprintf("kAFL %a: Fuzz buf 0x%p Size %d (0x%x)\n", __FUNCTION__, buf, num_bytes, num_bytes);
   kafl_hprintf("kAFL %a: ve_pos: %d, num_bytes: %d, ve_pos + num_bytes: %d, ve_num: %d\n", __FUNCTION__, ve_pos, num_bytes, ve_pos + num_bytes, ve_num);
   if (ve_pos + num_bytes <= ve_num)
