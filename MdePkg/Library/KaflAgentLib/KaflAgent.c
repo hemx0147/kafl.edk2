@@ -228,6 +228,7 @@ kafl_agent_init (
   //
   // initial fuzzer handshake
   //
+  kafl_hprintf("kAFL: initial fuzzer handshake\n");
   kAFL_hypercall(HYPERCALL_KAFL_ACQUIRE, 0);
   kAFL_hypercall(HYPERCALL_KAFL_RELEASE, 0);
 
@@ -261,10 +262,12 @@ kafl_agent_init (
   observed_buf_pages = (observed_buffer_size % EFI_PAGE_SIZE) == 0 ? observed_buffer_size / EFI_PAGE_SIZE : ((UINTN)(observed_buffer_size / EFI_PAGE_SIZE)) + 1;
   payload_buffer = (UINT8 *)AllocateAlignedPages(payload_buf_pages, EFI_PAGE_SIZE);
   observed_buffer = (UINT8 *)AllocateAlignedPages(observed_buf_pages, EFI_PAGE_SIZE);
+  kafl_hprintf("kAFL %a: allocated %d pages for payload at 0x%p\n", __FUNCTION__, payload_buf_pages, payload_buffer);
+  kafl_hprintf("kAFL %a: allocated %d pages for observed at 0x%p\n", __FUNCTION__, observed_buf_pages, observed_buffer);
 
   if (!payload_buffer)
   {
-    kafl_habort("Failed to allocate host payload buffer!\n");
+    kafl_habort("kAFL: Failed to allocate host payload buffer!\n");
   }
 #else
   pr_warn("Page allocation functions unavailable, using stack for payload buffer instead\n");
@@ -289,6 +292,7 @@ kafl_agent_init (
   //
   // submit agent config
   //
+  kafl_hprintf("kAFL %a: submit agent config\n", __FUNCTION__);
   //? add other values from kafl.linux kafl-agent.c as well?
   agent_config.agent_magic = NYX_AGENT_MAGIC;
   agent_config.agent_version = NYX_AGENT_VERSION;
@@ -303,7 +307,7 @@ kafl_agent_init (
   //
   // fetch fuzz input for later #VE injection
   //
-  kafl_hprintf("Starting kAFL loop...\n");
+  kafl_hprintf("kAFL %a: Starting kAFL loop...\n", __FUNCTION__);
   kAFL_hypercall(HYPERCALL_KAFL_NEXT_PAYLOAD, 0);
 
   payload = (kAFL_payload *)payload_buffer;
@@ -311,6 +315,7 @@ kafl_agent_init (
   ve_num = payload->size;
   ve_pos = 0;
   ve_mis = 0;
+  kafl_hprintf("kAFL %a: set payload to 0x%p, ve_buf: 0x%p, ve_num: %d\n", __FUNCTION__, payload, ve_buf, ve_num);
 
   if (payload->flags.raw_data != 0)
   {
@@ -335,14 +340,17 @@ kafl_agent_init (
     ob_num = sizeof(observed_buffer);
     ob_pos = 0;
   }
+  kafl_hprintf("kAFL %a: set observed buf: 0x%p, ob_num: %d\n", __FUNCTION__, ob_buf, ob_num);
 
   // TODO: add kafl stats clear
 
+  kafl_hprintf("kAFL %a: initialize agent\n", __FUNCTION__);
   agent_initialized = TRUE;
 
   //
   // start coverage tracing
   //
+  kafl_hprintf("kAFL %a: start coverage tracking\n", __FUNCTION__);
   kAFL_hypercall(HYPERCALL_KAFL_ACQUIRE, 0);
 }
 
@@ -389,6 +397,7 @@ kafl_agent_done (
   // Stop tracing and restore the snapshot for next round
   // Non-zero argument triggers stream_expand mutation in kAFL
   //
+  kafl_hprintf("kAFL %a: Exiting kAFL loop\n", __FUNCTION__);
   kAFL_hypercall(HYPERCALL_KAFL_RELEASE, ve_mis*sizeof(ve_buf[0]));
 }
 
@@ -454,7 +463,12 @@ kafl_fuzz_buffer (
 
   // TODO: add agent flags dump callers
 
+  kafl_hprintf("kAFL %a: Buffer 0x%p, Size %d (0x%x) before injection:\n", __FUNCTION__, fuzz_buf, num_bytes, num_bytes);
+  kafl_dump_buffer(fuzz_buf, num_bytes < 32 ? num_bytes : 32);
   num_fuzzed = _kafl_fuzz_buffer(fuzz_buf, num_bytes);
+  kafl_hprintf("kAFL %a: Buffer 0x%p, Size %d (0x%x) after injection:\n", __FUNCTION__, fuzz_buf, num_bytes, num_bytes);
+  kafl_dump_buffer(fuzz_buf, num_bytes < 32 ? num_bytes : 32);
+  kafl_hprintf("kAFL %a: num_fuzzed: %d (0x%x)\n", __FUNCTION__, num_fuzzed, num_fuzzed);
 
   if (agent_flags.dump_observed)
   {
