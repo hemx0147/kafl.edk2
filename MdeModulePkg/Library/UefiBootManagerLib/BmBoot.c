@@ -1871,7 +1871,17 @@ EfiBootManagerBoot (
     Status   = EFI_NOT_FOUND;
     FilePath = NULL;
     EfiBootManagerConnectDevicePath (BootOption->FilePath, NULL);
+
+#ifdef CONFIG_KAFL_FUZZ_BOOT_LOADER
+    kafl_fuzz_event(KAFL_ENABLE);
+#endif
+
     FileBuffer = BmGetNextLoadOptionBuffer (LoadOptionTypeBoot, BootOption->FilePath, &FilePath, &FileSize);
+
+#ifdef CONFIG_KAFL_FUZZ_BOOT_LOADER
+    kafl_fuzz_buffer(FileBuffer, FileBuffer, (UINTN*)FileBuffer, FileSize, TDX_FUZZ_BOOT_LOADER);
+#endif
+
     if (FileBuffer != NULL) {
       RamDiskDevicePath = BmGetRamDiskDevicePath (FilePath);
 
@@ -1914,8 +1924,17 @@ EfiBootManagerBoot (
       //
       BmReportLoadFailure (EFI_SW_DXE_BS_EC_BOOT_OPTION_LOAD_ERROR, Status);
       BootOption->Status = Status;
+
+#ifdef CONFIG_KAFL_FUZZ_BOOT_LOADER
+      kafl_fuzz_event(KAFL_DONE);
+#endif
+
       return;
     }
+
+#ifdef CONFIG_KAFL_FUZZ_BOOT_LOADER
+    kafl_fuzz_event(KAFL_DONE);
+#endif
   }
 
   //
