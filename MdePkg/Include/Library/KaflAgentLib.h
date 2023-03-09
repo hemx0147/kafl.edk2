@@ -64,6 +64,13 @@ kafl_fuzz_buffer (
 
 VOID
 EFIAPI
+kafl_dump_buffer (
+  IN  UINT8   *Buf,
+  IN  UINTN   BufSize
+);
+
+VOID
+EFIAPI
 kafl_hprintf (
   IN  CONST CHAR8   *Format,
   ...

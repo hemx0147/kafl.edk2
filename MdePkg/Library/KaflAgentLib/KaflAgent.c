@@ -116,6 +116,28 @@ kafl_habort (
     } \
   } while (0)
 
+VOID
+EFIAPI
+kafl_dump_buffer (
+  IN  UINT8   *Buf,
+  IN  UINTN   BufSize
+  )
+{
+  UINTN Pos;
+
+  kafl_hprintf("DumpBuffer 0x%p (%d (0x%x) bytes): [", Buf, BufSize, BufSize);
+
+  for (Pos = 0; Pos < BufSize; Pos++)
+  {
+    if (Pos != 0)
+    {
+      kafl_hprintf(" ");
+    }
+    kafl_hprintf("%02x", Buf[Pos]);
+  }
+  kafl_hprintf("]\n");
+}
+
 STATIC
 VOID
 hprintf_marker (
