@@ -21,16 +21,16 @@
 //
 #define MAX_DEBUG_MESSAGE_LENGTH  0x100
 
-BOOLEAN agent_initialized = FALSE;
-BOOLEAN fuzz_enabled = FALSE;
+STATIC BOOLEAN agent_initialized = FALSE;
+STATIC BOOLEAN fuzz_enabled = FALSE;
 
-agent_config_t agent_config = { 0 };
-host_config_t host_config = { 0 };
+STATIC agent_config_t agent_config = { 0 };
+STATIC host_config_t host_config = { 0 };
 
 // abort at end of payload - otherwise we keep feeding unmodified input
 // which means we see coverage that is not represented in the payload
-BOOLEAN exit_at_eof = TRUE;
-kafl_dump_file_t dump_file = { 0 };
+STATIC BOOLEAN exit_at_eof = TRUE;
+STATIC kafl_dump_file_t dump_file = { 0 };
 
 // AllocatePool/AllocatePages might not be available at early boot
 #define KAFL_ASSUME_ALLOC
@@ -388,7 +388,7 @@ kafl_agent_done (
 {
   if (!agent_initialized)
   {
-    kafl_habort("kAFL: Attempt to finish kAFL run but never initialized\n");
+    kafl_habort("Attempt to finish kAFL run but never initialized\n");
   }
 
   kafl_agent_stats();
@@ -399,6 +399,17 @@ kafl_agent_done (
   //
   kafl_hprintf("kAFL %a: Exiting kAFL loop\n", __FUNCTION__);
   kAFL_hypercall(HYPERCALL_KAFL_RELEASE, ve_mis*sizeof(ve_buf[0]));
+}
+
+VOID
+EFIAPI
+kafl_show_state (
+  VOID
+  )
+{
+  kafl_hprintf("kAFL: print current fuzzer state\n");
+  kafl_hprintf("  agent_init: %d\n", agent_initialized);
+  kafl_hprintf("  fuzz_enabled: %d\n", fuzz_enabled);
 }
 
 STATIC

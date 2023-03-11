@@ -52,6 +52,12 @@ kafl_fuzz_event (
   IN  enum kafl_event  e
 );
 
+VOID
+EFIAPI
+kafl_show_state (
+  VOID
+  );
+
 UINTN
 EFIAPI
 kafl_fuzz_buffer (
