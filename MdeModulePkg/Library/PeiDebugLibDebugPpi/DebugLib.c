@@ -313,6 +313,7 @@ DebugAssert (
     //
 #ifdef KAFL_ACTIVATE
 	/* fuzz test return OK - no deadloop / breakpoint */
+  kafl_hprintf("kAFL %a: return OK\n", __FUNCTION__);
   kafl_fuzz_event(KAFL_DONE);
 #endif
     if ((PcdGet8 (PcdDebugPropertyMask) & DEBUG_PROPERTY_ASSERT_BREAKPOINT_ENABLED) != 0) {
@@ -329,6 +330,7 @@ DebugAssert (
   }
 #ifdef KAFL_ACTIVATE
 	/* fuzz test return OK - no deadloop / breakpoint */
+  kafl_hprintf("kAFL %a: return OK\n", __FUNCTION__);
   kafl_fuzz_event(KAFL_DONE);
 #endif
 }

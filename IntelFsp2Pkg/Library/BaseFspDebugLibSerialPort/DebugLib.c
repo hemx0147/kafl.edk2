@@ -253,11 +253,6 @@ DebugAssertInternal (
     }
   }
 
-#ifdef KAFL_ACTIVATE
-  /* Fuzz test return OK - no deadloop */
-  kafl_fuzz_event(KAFL_DONE);
-#endif
-
   //
   // Dead loop
   //
