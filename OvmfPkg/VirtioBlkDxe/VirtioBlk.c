@@ -501,13 +501,17 @@ VirtioBlkReadBlocks (
     return Status;
   }
 
-  return SynchronousRequest (
+  Status = SynchronousRequest (
            Dev,
            Lba,
            BufferSize,
            Buffer,
            FALSE       // RequestIsWrite
            );
+#ifdef CONFIG_KAFL_FUZZ_BLK_DEV_READ
+    kafl_fuzz_buffer(Buffer, Buffer, (UINTN*)Buffer, BufferSize, TDX_FUZZ_BLK_DEV_INIT);
+#endif
+  return Status;
 }
 
 /**
@@ -724,6 +728,8 @@ VirtioBlkInit (
   UINT16     QueueSize;
   UINT64     RingBaseShift;
 
+  DEBUG_FCALL;
+
   PhysicalBlockExp = 0;
   AlignmentOffset = 0;
   OptIoSize = 0;
@@ -761,6 +767,14 @@ VirtioBlkInit (
   // step 4a -- retrieve and validate features
   //
   Status = Dev->VirtIo->GetDeviceFeatures (Dev->VirtIo, &Features);
+
+#ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
+  kafl_show_state();
+  kafl_fuzz_event(KAFL_ENABLE);
+  kafl_fuzz_buffer((UINT64*)&Features, (UINT64*)&Features, (UINTN*)&Features, sizeof(UINT64), TDX_FUZZ_BLK_DEV_INIT);
+  kafl_show_state();
+#endif
+
   if (EFI_ERROR (Status)) {
     goto Failed;
   }
@@ -824,6 +838,7 @@ VirtioBlkInit (
   // discovery, and the device can also reject the selected set of features.
   //
   if (Dev->VirtIo->Revision >= VIRTIO_SPEC_REVISION (1, 0, 0)) {
+    kafl_hprintf("Virtio BLK device revision is >= virtio 1.0.0\n");
     Status = Virtio10WriteFeatures (Dev->VirtIo, Features, &NextDevStat);
     if (EFI_ERROR (Status)) {
       goto Failed;
@@ -895,6 +910,7 @@ VirtioBlkInit (
   // step 5 -- Report understood features.
   //
   if (Dev->VirtIo->Revision < VIRTIO_SPEC_REVISION (1, 0, 0)) {
+    kafl_hprintf("Virtio BLK device revision is < virtio 1.0.0\n");
     Features &= ~(UINT64)(VIRTIO_F_VERSION_1 | VIRTIO_F_IOMMU_PLATFORM);
     Status = Dev->VirtIo->SetGuestFeatures (Dev->VirtIo, Features);
     if (EFI_ERROR (Status)) {
@@ -902,6 +918,7 @@ VirtioBlkInit (
     }
   }
 
+  kafl_hprintf("kAFL %a: reported DeviceFeatures = %d (0x%x)\n", __FUNCTION__, Features, Features);
   //
   // step 6 -- initialization complete
   //
@@ -931,6 +948,9 @@ VirtioBlkInit (
   Dev->BlockIoMedia.IoAlign          = 0;
   Dev->BlockIoMedia.LastBlock        = DivU64x32 (NumSectors,
                                          BlockSize / 512) - 1;
+#ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
+    kafl_fuzz_buffer(Dev->BlockIo.Media, Dev->BlockIo.Media, (UINTN*)Dev->BlockIo.Media, sizeof(EFI_BLOCK_IO_MEDIA), TDX_FUZZ_BLK_DEV_INIT);
+#endif
 
   DEBUG ((DEBUG_INFO, "%a: LbaSize=0x%x[B] NumBlocks=0x%Lx[Lba]\n",
     __FUNCTION__, Dev->BlockIoMedia.BlockSize,
@@ -1124,6 +1144,11 @@ CloseVirtIo:
 FreeVirtioBlk:
   FreePool (Dev);
 
+#ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
+  kafl_hprintf("Exit on Error\n");
+  kafl_show_state();
+  kafl_fuzz_event(KAFL_DONE);
+#endif
   return Status;
 }
 

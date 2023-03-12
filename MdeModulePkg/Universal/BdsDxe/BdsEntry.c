@@ -1089,10 +1089,11 @@ BdsEntry (
 
   DEBUG ((EFI_D_ERROR, "[Bds] Unable to boot!\n"));
   //
-  // kAFL: abort execution before entering deadloop
+  // kAFL: finish execution before entering deadloop
   //
-  kafl_hprintf("kAFL: stop execution before entering unable to boot CPU deadloop\n");
-  kafl_fuzz_event(KAFL_ABORT);
+  kafl_hprintf("kAFL: stop fuzzing loop before entering unable to boot CPU deadloop\n");
+  kafl_show_state();
+  kafl_fuzz_event(KAFL_DONE);
   PlatformBootManagerUnableToBoot ();
   CpuDeadLoop ();
 }

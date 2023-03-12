@@ -26,3 +26,7 @@
   BaseMemoryLib
   MemoryAllocationLib
   PrintLib
+  UefiRuntimeServicesTableLib
+
+[Guids]
+  gKaflAgentStateVariableGuid   ## CONSUMES
