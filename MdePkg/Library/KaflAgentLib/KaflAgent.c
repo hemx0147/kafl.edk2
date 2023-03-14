@@ -3,16 +3,14 @@
 
 **/
 
-#include <Guid/KaflAgent.h>               // agent state variable GUID & name
 #include <Library/BaseLib.h>              // AsciiStrnCpyS
 #include <Library/DebugLib.h>
 #include <Library/PrintLib.h>             // AsciiVSPrint, AsciiVBPrint
-#include <Uefi/UefiBaseType.h>            // EFI_PAGE_MASK
-#include <Library/KaflAgentLib.h>
-#include <Library/BaseMemoryLib.h>        // ZeroMem
+#include <Uefi/UefiBaseType.h>            // EFI_PAGE_MASK, EFI_SIZE_TO_PAGES
+#include <Library/BaseMemoryLib.h>        // SetMem, CopyMem
 #include <Library/MemoryAllocationLib.h>  // AllocateAlignedPages
-#include <Library/UefiRuntimeServicesTableLib.h>
-#include "NyxHypercalls.h"
+
+#include <KaflAgentLibInternal.h>
 
 
 #define pr_fmt(fmt) "kAFL: " fmt
@@ -24,40 +22,9 @@
 //
 #define MAX_DEBUG_MESSAGE_LENGTH  0x100
 
-// TODO: check kernel agent implementation for correct definition
-typedef struct agent_flags {
-  BOOLEAN dump_observed;
-  BOOLEAN dump_stats;
-  BOOLEAN dump_callers;
-} agent_flags;
-
-// store agent state as struct in UEFI var to make it available accross compilation units
-typedef struct agent_state_s {
-  BOOLEAN agent_initialized;
-  BOOLEAN fuzz_enabled;
-  BOOLEAN exit_at_eof;
-  agent_flags agent_flags;
-  agent_config_t agent_config;
-  host_config_t host_config;
-  kafl_dump_file_t dump_file;
-  UINT8 *payload_buffer;
-  UINT8 *observed_buffer;
-  UINT8 *ve_buf;
-  UINT8 *ob_buf;
-  UINTN payload_buffer_size;
-  UINTN observed_buffer_size;
-  UINT32 ve_num;
-  UINT32 ve_pos;
-  UINT32 ve_mis;
-  UINT32 ob_num;
-  UINT32 ob_pos;
-} agent_state_t;
-
-STATIC agent_state_t g_agent_state = { 0 };
-
 // abort at end of payload - otherwise we keep feeding unmodified input
 // which means we see coverage that is not represented in the payload
-// g_agent_state.exit_at_eof = TRUE;
+// agent_state.exit_at_eof = TRUE;
 
 
 CONST CHAR8 *kafl_event_name[KAFL_EVENT_MAX] = {
@@ -79,7 +46,6 @@ CONST CHAR8 *kafl_event_name[KAFL_EVENT_MAX] = {
   "KAFL_TRACE",
 };
 
-STATIC
 VOID
 EFIAPI
 kafl_raise_panic (
@@ -89,7 +55,6 @@ kafl_raise_panic (
   kAFL_hypercall(HYPERCALL_KAFL_PANIC, 0);
 }
 
-STATIC
 VOID
 EFIAPI
 kafl_raise_kasan (
@@ -98,7 +63,7 @@ kafl_raise_kasan (
 {
   kAFL_hypercall(HYPERCALL_KAFL_KASAN, 0);
 }
-STATIC
+
 VOID
 EFIAPI
 kafl_habort (
@@ -107,15 +72,6 @@ kafl_habort (
 {
   kAFL_hypercall(HYPERCALL_KAFL_USER_ABORT, (UINTN)Msg);
 }
-
-// dedicated assert for raising kAFL/harness level issues
-#define KAFL_ASSERT(Exp) \
-  do { \
-    if (!(Exp)) { \
-      kafl_hprintf("kAFL ASSERT at %s:%d, %s\n", __FILE__, __LINE__, #Exp); \
-      kafl_habort("assertion fail (see hprintf logs)"); \
-    } \
-  } while (0)
 
 VOID
 EFIAPI
@@ -172,89 +128,6 @@ hprintf_marker (
   kAFL_hypercall(HYPERCALL_KAFL_PRINTF, (UINTN)Buffer);
 }
 
-/**
-  Write all current state values to state struct and store it in UEFI variable
-  Triggers abort if an error occured while writing the variable.
-**/
-STATIC
-VOID
-EFIAPI
-kafl_store_agent_state (
-  VOID
-  // agent_state_t *g_agent_state
-  )
-{
-  EFI_STATUS Status;
-
-  Status = gRT->SetVariable (
-    KAFL_AGENT_STATE_VARIABLE_NAME,
-    &gKaflAgentStateVariableGuid,
-    EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS,
-    sizeof(agent_state_t),
-    &g_agent_state
-  );
-  if (EFI_ERROR (Status))
-  {
-    kafl_hprintf("kAFL: write agent state to UEFI variable failed with status %d\n", Status);
-    kafl_habort("aborting session\n");
-  }
-}
-
-/**
-  Obtain the kAFL agent state from UEFI variable.
-
-  @retval EFI_SUCCESS if agent state could be read from UEFI variable
-  @retval EFI_ABORTED otherwise
-**/
-STATIC
-EFI_STATUS
-EFIAPI
-kafl_get_agent_state (
-  VOID
-  )
-{
-  EFI_STATUS Status = EFI_ABORTED;
-  UINTN StructSize = sizeof(agent_state_t);
-
-  Status = gRT->GetVariable (
-    KAFL_AGENT_STATE_VARIABLE_NAME,
-    &gKaflAgentStateVariableGuid,
-    NULL,
-    &StructSize,
-    &g_agent_state
-  );
-
-  // either agent was initialized, state can be retrieved from UEFI var and GetVariable succeeds,
-  // or agent was not yet initialized, UEFI var does exist and GetVariable returns NOT FOUND.
-  // all other cases indicate issues while accessing the variable.
-  if ( !( (Status == EFI_SUCCESS) || (Status == EFI_NOT_FOUND)) )
-  {
-    kafl_hprintf("accessing agent state UEFI variable failed with status %d\n", Status);
-    kafl_habort("aborting session\n");
-  }
-  return Status;
-}
-
-STATIC
-VOID
-EFIAPI
-kafl_dump_observed_payload (
-  IN  CHAR8 *filename,
-  IN  UINTN append,
-  IN  UINT8 *buf,
-  IN  UINT32  buflen
-  )
-{
-  STATIC CHAR8 fname_buf[128];
-  AsciiStrnCpyS(fname_buf, sizeof(fname_buf), filename, sizeof(fname_buf));
-  g_agent_state.dump_file.file_name_str_ptr = (UINT64)fname_buf;
-  g_agent_state.dump_file.data_ptr = (UINT64)buf;
-  g_agent_state.dump_file.bytes = buflen;
-  g_agent_state.dump_file.append = append;
-
-  kAFL_hypercall(HYPERCALL_KAFL_DUMP_FILE, (UINTN)&(g_agent_state.dump_file));
-}
-
 VOID
 EFIAPI
 kafl_hprintf (
@@ -269,17 +142,52 @@ kafl_hprintf (
   VA_END (Marker);
 }
 
+VOID
+EFIAPI
+internal_agent_done (
+  IN  agent_state_t   *agent_state
+  )
+{
+  UINT64 ReleaseNum;
+
+  // turn off this check for now to bypass issues with reading agent state across modules
+  // if (!agent_state->agent_initialized)
+  // {
+  //   kafl_habort("Attempt to finish kAFL run but never initialized\n");
+  // }
+
+  // TODO: add agent stats / file dumping of agent stats
+
+  //
+  // Stop tracing and restore the snapshot for next round
+  // Non-zero argument triggers stream_expand mutation in kAFL
+  //
+  kafl_hprintf("kAFL %a: Exiting kAFL loop\n", __FUNCTION__);
+  ReleaseNum = agent_state->ve_mis * sizeof((agent_state->ve_buf)[0]);
+  kAFL_hypercall(HYPERCALL_KAFL_RELEASE, ReleaseNum);
+}
+
+VOID
+EFIAPI
+internal_show_state (
+  agent_state_t *agent_state
+  )
+{
+  kafl_hprintf("kAFL: print current fuzzer state\n");
+  kafl_hprintf("  agent_init: %d\n", agent_state->agent_initialized);
+  kafl_hprintf("  fuzz_enabled: %d\n", agent_state->fuzz_enabled);
+}
+
+// TODO: create fns for setting variable init values, set-/copy-/allocate memory
 STATIC
 VOID
 EFIAPI
 kafl_agent_init (
-  VOID
+  IN  OUT agent_state_t   *agent_state
   )
 {
   UINTN payload_buffer_size;
   UINTN observed_buffer_size;
-  UINTN payload_buf_pages;
-  UINTN observed_buf_pages;
   UINT8 *payload_buffer;
   UINT8 *observed_buffer;
   UINT8 *ve_buf;
@@ -294,7 +202,7 @@ kafl_agent_init (
   agent_config_t agent_config = {0};
   agent_flags agent_flags = {0};
 
-  if (g_agent_state.agent_initialized)
+  if (agent_state->agent_initialized)
   {
     kafl_habort("Warning: Agent was already initialized!\n");
   }
@@ -328,17 +236,15 @@ kafl_agent_init (
   }
 
   //
-  // allocate payload/observed buffer if AllocateAlignedPages is available
+  // allocate page-aligned payload/observed buffer
   //
   pr_warn("kAFL %a: Using page allocation functions for payload buffer\n", __FUNCTION__);
   payload_buffer_size = host_config.payload_buffer_size;
   observed_buffer_size = 2*host_config.payload_buffer_size;
-  payload_buf_pages = (payload_buffer_size % EFI_PAGE_SIZE) == 0 ? payload_buffer_size / EFI_PAGE_SIZE : ((UINTN)(payload_buffer_size / EFI_PAGE_SIZE)) + 1;
-  observed_buf_pages = (observed_buffer_size % EFI_PAGE_SIZE) == 0 ? observed_buffer_size / EFI_PAGE_SIZE : ((UINTN)(observed_buffer_size / EFI_PAGE_SIZE)) + 1;
-  payload_buffer = (UINT8 *)AllocateAlignedPages(payload_buf_pages, EFI_PAGE_SIZE);
-  observed_buffer = (UINT8 *)AllocateAlignedPages(observed_buf_pages, EFI_PAGE_SIZE);
-  kafl_hprintf("kAFL %a: allocated %d pages for payload at 0x%p\n", __FUNCTION__, payload_buf_pages, payload_buffer);
-  kafl_hprintf("kAFL %a: allocated %d pages for observed at 0x%p\n", __FUNCTION__, observed_buf_pages, observed_buffer);
+  payload_buffer = (UINT8*)AllocateAlignedPages(EFI_SIZE_TO_PAGES(payload_buffer_size), EFI_PAGE_SIZE);
+  observed_buffer = (UINT8*)AllocateAlignedPages(EFI_SIZE_TO_PAGES(observed_buffer_size), EFI_PAGE_SIZE);
+  kafl_hprintf("kAFL %a: allocated %d bytes for payload at 0x%p\n", __FUNCTION__, payload_buffer_size, payload_buffer);
+  kafl_hprintf("kAFL %a: allocated %d bytes for observed at 0x%p\n", __FUNCTION__, observed_buffer_size, observed_buffer);
 
   if (!payload_buffer)
   {
@@ -414,28 +320,25 @@ kafl_agent_init (
 
   // TODO: add all other agent state changes
 
+  //
+  // initialize agent state
+  //
   kafl_hprintf("kAFL %a: initialize agent\n", __FUNCTION__);
-  g_agent_state.agent_initialized = TRUE;
-
-  kafl_hprintf("kAFL %a: fuzz enable\n", __FUNCTION__);
-  g_agent_state.fuzz_enabled = TRUE;
-
-  kafl_hprintf("kAFL: %a: initialize & store agent state struct\n");
-  g_agent_state.payload_buffer = payload_buffer;
-  g_agent_state.payload_buffer_size = payload_buffer_size;
-  g_agent_state.observed_buffer = observed_buffer;
-  g_agent_state.observed_buffer_size = observed_buffer_size;
-  g_agent_state.agent_flags = agent_flags;
-  g_agent_state.host_config = host_config;
-  g_agent_state.agent_config = agent_config;
-  g_agent_state.ve_buf = ve_buf;
-  g_agent_state.ve_num = ve_num;
-  g_agent_state.ve_pos = ve_pos;
-  g_agent_state.ve_mis = ve_mis;
-  g_agent_state.ob_buf = ob_buf;
-  g_agent_state.ob_num = ob_num;
-  g_agent_state.ob_pos = ob_pos;
-  kafl_store_agent_state();
+  agent_state->agent_initialized = TRUE;
+  agent_state->payload_buffer = payload_buffer;
+  agent_state->payload_buffer_size = payload_buffer_size;
+  agent_state->observed_buffer = observed_buffer;
+  agent_state->observed_buffer_size = observed_buffer_size;
+  agent_state->agent_flags = agent_flags;
+  agent_state->host_config = host_config;
+  agent_state->agent_config = agent_config;
+  agent_state->ve_buf = ve_buf;
+  agent_state->ve_num = ve_num;
+  agent_state->ve_pos = ve_pos;
+  agent_state->ve_mis = ve_mis;
+  agent_state->ob_buf = ob_buf;
+  agent_state->ob_num = ob_num;
+  agent_state->ob_pos = ob_pos;
 
   //
   // start coverage tracing
@@ -445,79 +348,18 @@ kafl_agent_init (
 }
 
 STATIC
-VOID
-EFIAPI
-kafl_agent_stats (
-  VOID
-  )
-{
-  if (!g_agent_state.agent_initialized)
-  {
-    // agent stats undefined
-    return;
-  }
-
-  // dump observed values
-  if (g_agent_state.agent_flags.dump_observed)
-  {
-    kafl_hprintf("Dumping observed input...\n");
-    kafl_dump_observed_payload("payload_XXXXXX", FALSE, (UINT8*)g_agent_state.ob_buf, g_agent_state.ob_pos);
-  }
-
-  // TODO: dump location stats
-
-  // TODO: trace locations
-}
-
-STATIC
-VOID
-EFIAPI
-kafl_agent_done (
-  VOID
-  )
-{
-  UINT64 ReleaseNum;
-
-  if (!g_agent_state.agent_initialized)
-  {
-    kafl_habort("Attempt to finish kAFL run but never initialized\n");
-  }
-
-  kafl_agent_stats();
-
-  //
-  // Stop tracing and restore the snapshot for next round
-  // Non-zero argument triggers stream_expand mutation in kAFL
-  //
-  kafl_hprintf("kAFL %a: Exiting kAFL loop\n", __FUNCTION__);
-  ReleaseNum = g_agent_state.ve_mis * sizeof((g_agent_state.ve_buf)[0]);
-  kAFL_hypercall(HYPERCALL_KAFL_RELEASE, ReleaseNum);
-}
-
-VOID
-EFIAPI
-kafl_show_state (
-  VOID
-  )
-{
-  kafl_get_agent_state();
-  kafl_hprintf("kAFL: print current fuzzer state\n");
-  kafl_hprintf("  agent_init: %d\n", g_agent_state.agent_initialized);
-  kafl_hprintf("  fuzz_enabled: %d\n", g_agent_state.fuzz_enabled);
-}
-
-STATIC
 UINTN
 EFIAPI
-_kafl_fuzz_buffer (
+_internal_fuzz_buffer (
   IN      VOID          *buf,
-  IN OUT  CONST UINTN   num_bytes
+  IN OUT  CONST UINTN   num_bytes,
+  IN OUT  agent_state_t *agent_state
   )
 {
-  UINT8 *ve_buf = g_agent_state.ve_buf;
-  UINT32 ve_pos = g_agent_state.ve_pos;
-  UINT32 ve_num = g_agent_state.ve_num;
-  UINT32 ve_mis = g_agent_state.ve_mis;
+  UINT8 *ve_buf = agent_state->ve_buf;
+  UINT32 ve_pos = agent_state->ve_pos;
+  UINT32 ve_num = agent_state->ve_num;
+  UINT32 ve_mis = agent_state->ve_mis;
 
   // TODO: fuzzer kickstart value must be at least num_bytes larger, otherwise fuzzer won't work
   kafl_hprintf("kAFL %a: Fuzz buf 0x%p Size %d (0x%x)\n", __FUNCTION__, buf, num_bytes, num_bytes);
@@ -527,7 +369,7 @@ _kafl_fuzz_buffer (
     kafl_hprintf("kAFL %a: CopyMem ve_pos + ve_buf: %d, num_bytes: %d\n", __FUNCTION__, ve_pos + ve_buf, num_bytes);
     CopyMem(buf, ve_buf + ve_pos, num_bytes);
     ve_pos += num_bytes;
-    g_agent_state.ve_pos = ve_pos;
+    agent_state->ve_pos = ve_pos;
     kafl_hprintf("kAFL %a: new ve_pos: %d\n", __FUNCTION__, ve_pos);
     return num_bytes;
   }
@@ -536,64 +378,63 @@ _kafl_fuzz_buffer (
   // insufficient fuzz buffer
   //
   ve_mis += num_bytes;
-  g_agent_state.ve_mis = ve_mis;
+  agent_state->ve_mis = ve_mis;
   kafl_hprintf("kAFL %a: insufficient FuzBuf. ve_mis: %d\n", __FUNCTION__, ve_mis);
-  if (g_agent_state.exit_at_eof && !g_agent_state.agent_flags.dump_observed)
+  if (agent_state->exit_at_eof && !agent_state->agent_flags.dump_observed)
   {
     kafl_hprintf("kAFL %a: end here without return\n", __FUNCTION__);
     /* no return */
-    kafl_agent_done();
+    internal_agent_done(agent_state);
   }
   return 0;
 }
 
 UINTN
 EFIAPI
-kafl_fuzz_buffer (
+internal_fuzz_buffer (
   IN  VOID                    *fuzz_buf,
   IN  CONST VOID              *orig_buf,
   IN  CONST UINTN             *addr,
   IN  CONST UINTN             num_bytes,
-  IN  CONST enum tdx_fuzz_loc type
+  IN  CONST enum tdx_fuzz_loc type,
+  IN  OUT  agent_state_t *agent_state
   )
 {
   UINTN num_fuzzed = 0;
-  UINT8 *ob_buf = g_agent_state.ob_buf;
-  UINT32 ob_num = g_agent_state.ob_num;
-  UINT32 ob_pos = g_agent_state.ob_pos;
+  UINT8 *ob_buf = agent_state->ob_buf;
+  UINT32 ob_num = agent_state->ob_num;
+  UINT32 ob_pos = agent_state->ob_pos;
 
   // TODO: add fuzz filter
 
   // TODO: add trace tdx fuzz?
 
-  kafl_get_agent_state();
-
-  if (!g_agent_state.fuzz_enabled)
+  if (!agent_state->fuzz_enabled)
   {
     return 0;
   }
 
-  if (!g_agent_state.agent_initialized)
+  if (!agent_state->agent_initialized)
   {
     kafl_hprintf("kAFL %a: init agent because not yet done before\n", __FUNCTION__);
-    kafl_agent_init();
+    kafl_agent_init(agent_state);
   }
 
   // TODO: add agent flags dump callers
 
   kafl_hprintf("kAFL %a: Buffer 0x%p, Size %d (0x%x) before injection:\n", __FUNCTION__, fuzz_buf, num_bytes, num_bytes);
   kafl_dump_buffer(fuzz_buf, num_bytes < 32 ? num_bytes : 32);
-  num_fuzzed = _kafl_fuzz_buffer(fuzz_buf, num_bytes);
+  num_fuzzed = _internal_fuzz_buffer(fuzz_buf, num_bytes, agent_state);
   kafl_hprintf("kAFL %a: Buffer 0x%p, Size %d (0x%x) after injection:\n", __FUNCTION__, fuzz_buf, num_bytes, num_bytes);
   kafl_dump_buffer(fuzz_buf, num_bytes < 32 ? num_bytes : 32);
   kafl_hprintf("kAFL %a: num_fuzzed: %d (0x%x)\n", __FUNCTION__, num_fuzzed, num_fuzzed);
 
-  if (g_agent_state.agent_flags.dump_observed)
+  if (agent_state->agent_flags.dump_observed)
   {
     if (ob_pos + num_bytes > ob_num)
     {
       pr_warn("Warning: insufficient space in dump_payload\n");
-      kafl_agent_done();
+      internal_agent_done(agent_state);
     }
 
     CopyMem(ob_buf + ob_pos, fuzz_buf, num_fuzzed);
@@ -601,43 +442,41 @@ kafl_fuzz_buffer (
     CopyMem(ob_buf + ob_pos, orig_buf, num_bytes - num_fuzzed);
     ob_pos += (num_bytes - num_fuzzed);
 
-    g_agent_state.ob_pos = ob_pos;
+    agent_state->ob_pos = ob_pos;
   }
 
   return num_fuzzed;
 }
 
-
 VOID
 EFIAPI
-kafl_fuzz_event (
-  IN  enum kafl_event  e
+internal_fuzz_event (
+  IN  enum kafl_event  e,
+  IN  OUT  agent_state_t *agent_state
   )
 {
-  kafl_get_agent_state();
-
   switch(e)
   {
     case KAFL_START:
       pr_warn("[*] Agent start!\n");
-      kafl_agent_init();  // also sets fuzz_enabled if not yet done
+      kafl_agent_init(agent_state);
+      agent_state->fuzz_enabled = TRUE;
       return;
     case KAFL_ENABLE:
       pr_warn("[*] Agent enable!\n");
       /* fallthrough */
     case KAFL_RESUME:
-      g_agent_state.fuzz_enabled = TRUE;
-      kafl_store_agent_state();
+      agent_state->fuzz_enabled = TRUE;
       return;
     case KAFL_DONE:
-      return kafl_agent_done();
+      return internal_agent_done(agent_state);
     case KAFL_ABORT:
       return kafl_habort("kAFL got ABORT event.\n");
     default:
       break;
   }
 
-  if (!g_agent_state.agent_initialized)
+  if (!agent_state->agent_initialized)
   {
     pr_warn("Got event %s but not initialized?!\n", kafl_event_name[e]);
     return;

@@ -1,0 +1,34 @@
+#/** @file
+# Component description file for kAFL Fuzzing Agent
+#
+#**/
+
+[Defines]
+  INF_VERSION    = 0x00010005
+  BASE_NAME      = KaflAgentDxeLib
+  FILE_GUID      = F42A85F7-5458-4D00-BEE2-000D98D45178
+  MODULE_TYPE    = DXE_DRIVER
+  VERSION_STRING = 1.0
+  LIBRARY_CLASS  = KaflAgentLib
+  # TODO: add library constructor
+
+#
+# VALID_ARCHITECTURES = X64
+#
+
+[Sources]
+  KaflAgentDxe.c
+  KaflAgent.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+
+[LibraryClasses]
+  DebugLib
+  BaseMemoryLib
+  MemoryAllocationLib
+  PrintLib
+  UefiRuntimeServicesTableLib
+
+[Guids]
+  gKaflAgentStateVariableGuid   ## CONSUMES

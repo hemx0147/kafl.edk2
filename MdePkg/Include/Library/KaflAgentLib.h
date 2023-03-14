@@ -6,7 +6,7 @@
 #ifndef _KAFL_AGENT_LIB_H_
 #define _KAFL_AGENT_LIB_H_
 
-#include <Base.h>   // UEFI definitions
+#include <Uefi/UefiBaseType.h>   // UEFI definitions
 
 enum kafl_event {
   KAFL_ENABLE,
@@ -54,12 +54,6 @@ kafl_fuzz_event (
   IN  enum kafl_event  e
 );
 
-VOID
-EFIAPI
-kafl_show_state (
-  VOID
-  );
-
 UINTN
 EFIAPI
 kafl_fuzz_buffer (
@@ -72,6 +66,13 @@ kafl_fuzz_buffer (
 
 VOID
 EFIAPI
+kafl_hprintf (
+  IN  CONST CHAR8   *Format,
+  ...
+);
+
+VOID
+EFIAPI
 kafl_dump_buffer (
   IN  UINT8   *Buf,
   IN  UINTN   BufSize
@@ -79,9 +80,8 @@ kafl_dump_buffer (
 
 VOID
 EFIAPI
-kafl_hprintf (
-  IN  CONST CHAR8   *Format,
-  ...
+kafl_show_state (
+  VOID
 );
 
 #endif

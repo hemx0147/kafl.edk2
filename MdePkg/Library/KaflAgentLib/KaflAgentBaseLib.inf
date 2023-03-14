@@ -5,17 +5,19 @@
 
 [Defines]
   INF_VERSION    = 0x00010005
-  BASE_NAME      = KaflAgentLib
-  FILE_GUID      = F42A85F7-5458-4D00-BEE2-000D98D45178
+  BASE_NAME      = KaflAgentBaseLib
+  FILE_GUID      = C44B80A1-ACDC-4BE0-A1AF-B4BC57F301A0
   MODULE_TYPE    = BASE
   VERSION_STRING = 1.0
   LIBRARY_CLASS  = KaflAgentLib
+  # TODO: add library constructor
 
 #
 # VALID_ARCHITECTURES = X64
 #
 
 [Sources]
+  KaflAgentBase.c
   KaflAgent.c
 
 [Packages]
@@ -26,7 +28,6 @@
   BaseMemoryLib
   MemoryAllocationLib
   PrintLib
-  UefiRuntimeServicesTableLib
 
 [Guids]
   gKaflAgentStateVariableGuid   ## CONSUMES
