@@ -498,6 +498,10 @@ VirtioBlkReadBlocks (
              FALSE               // RequestIsWrite
              );
   if (EFI_ERROR (Status)) {
+#ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
+    kafl_hprintf("Exit on Error\n");
+    kafl_fuzz_event(KAFL_DONE);
+#endif
     return Status;
   }
 
@@ -508,6 +512,10 @@ VirtioBlkReadBlocks (
            Buffer,
            FALSE       // RequestIsWrite
            );
+#ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
+  kafl_hprintf("Regular Exit\n");
+  kafl_fuzz_event(KAFL_DONE);
+#endif
   return Status;
 }
 
@@ -898,8 +906,14 @@ VirtioBlkInit (
   //
   // step 5 -- Report understood features.
   //
+#ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
+  kafl_fuzz_event(KAFL_ENABLE);
+#endif
   if (Dev->VirtIo->Revision < VIRTIO_SPEC_REVISION (1, 0, 0)) {
     Features &= ~(UINT64)(VIRTIO_F_VERSION_1 | VIRTIO_F_IOMMU_PLATFORM);
+#ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
+    kafl_fuzz_buffer((UINT64*) &Features, (UINT64*) &Features, (UINTN*) &Features, sizeof(UINT64), TDX_FUZZ_BLK_DEV);
+#endif
     Status = Dev->VirtIo->SetGuestFeatures (Dev->VirtIo, Features);
     if (EFI_ERROR (Status)) {
       goto UnmapQueue;
@@ -935,6 +949,11 @@ VirtioBlkInit (
   Dev->BlockIoMedia.IoAlign          = 0;
   Dev->BlockIoMedia.LastBlock        = DivU64x32 (NumSectors,
                                          BlockSize / 512) - 1;
+
+#ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
+  // fuzz BlockIoMedia
+  kafl_fuzz_buffer((UINT64*) Dev->BlockIo.Media, (UINT64*) Dev->BlockIo.Media, (UINTN*) Dev->BlockIo.Media, sizeof(EFI_BLOCK_IO_MEDIA), TDX_FUZZ_BLK_DEV);
+#endif
 
   DEBUG ((DEBUG_INFO, "%a: LbaSize=0x%x[B] NumBlocks=0x%Lx[Lba]\n",
     __FUNCTION__, Dev->BlockIoMedia.BlockSize,
@@ -1126,6 +1145,10 @@ CloseVirtIo:
          This->DriverBindingHandle, DeviceHandle);
 
 FreeVirtioBlk:
+#ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
+  kafl_hprintf("Exit on Error\n");
+  kafl_fuzz_event(KAFL_DONE);
+#endif
   FreePool (Dev);
 
   return Status;
