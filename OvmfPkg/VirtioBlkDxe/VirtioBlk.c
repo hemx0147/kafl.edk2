@@ -769,10 +769,9 @@ VirtioBlkInit (
   Status = Dev->VirtIo->GetDeviceFeatures (Dev->VirtIo, &Features);
 
 #ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
-  kafl_show_state();
+  kafl_hprintf("%a: fuzzing device features\n", __FUNCTION__);
   kafl_fuzz_event(KAFL_ENABLE);
   kafl_fuzz_buffer((UINT64*)&Features, (UINT64*)&Features, (UINTN*)&Features, sizeof(UINT64), TDX_FUZZ_BLK_DEV_INIT);
-  kafl_show_state();
 #endif
 
   if (EFI_ERROR (Status)) {
@@ -949,7 +948,8 @@ VirtioBlkInit (
   Dev->BlockIoMedia.LastBlock        = DivU64x32 (NumSectors,
                                          BlockSize / 512) - 1;
 #ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
-    kafl_fuzz_buffer(Dev->BlockIo.Media, Dev->BlockIo.Media, (UINTN*)Dev->BlockIo.Media, sizeof(EFI_BLOCK_IO_MEDIA), TDX_FUZZ_BLK_DEV_INIT);
+  kafl_hprintf("%a: fuzzing device BlockIO media\n", __FUNCTION__);
+  kafl_fuzz_buffer(Dev->BlockIo.Media, Dev->BlockIo.Media, (UINTN*)Dev->BlockIo.Media, sizeof(EFI_BLOCK_IO_MEDIA), TDX_FUZZ_BLK_DEV_INIT);
 #endif
 
   DEBUG ((DEBUG_INFO, "%a: LbaSize=0x%x[B] NumBlocks=0x%Lx[Lba]\n",

@@ -232,7 +232,6 @@ kafl_agent_init (
   //
   // allocate page-aligned payload/observed buffer
   //
-  pr_warn("kAFL %a: Using page allocation functions for payload buffer\n", __FUNCTION__);
   payload_buffer_size = host_config.payload_buffer_size;
   observed_buffer_size = 2*host_config.payload_buffer_size;
   payload_buffer = (UINT8*)AllocateAlignedPages(EFI_SIZE_TO_PAGES(payload_buffer_size), EFI_PAGE_SIZE);
@@ -317,7 +316,7 @@ kafl_agent_init (
   //
   // initialize agent state
   //
-  kafl_hprintf("kAFL %a: initialize agent\n", __FUNCTION__);
+  kafl_hprintf("kAFL %a: initialize agent state\n", __FUNCTION__);
   agent_state->agent_initialized = TRUE;
   agent_state->payload_buffer = payload_buffer;
   agent_state->payload_buffer_size = payload_buffer_size;
@@ -410,7 +409,6 @@ internal_fuzz_buffer (
 
   if (!agent_state->agent_initialized)
   {
-    kafl_hprintf("kAFL %a: init agent because not yet done before\n", __FUNCTION__);
     kafl_agent_init(agent_state);
   }
 
