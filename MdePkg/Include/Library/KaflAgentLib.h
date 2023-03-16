@@ -8,6 +8,13 @@
 
 #include <Uefi/UefiBaseType.h>   // UEFI definitions
 
+
+/** KAFL HARNESS CONFIGURATION START **/
+// #define CONFIG_KAFL_FUZZ_BOOT_LOADER
+// #define CONFIG_KAFL_FUZZ_VIRTIO_READ
+// #define CONFIG_KAFL_FUZZ_BLK_DEV_INIT
+/** KAFL HARNESS CONFIGURATION END **/
+
 enum kafl_event {
   KAFL_ENABLE,
   KAFL_START,
@@ -43,9 +50,9 @@ enum tdx_fuzz_loc {
   TDX_FUZZ_VIRTIO,
   TDX_FUZZ_RANDOM,  /* kAFL */
   TDX_FUZZ_DEBUGFS, /* kAFL */
-  TDX_FUZZ_MAX,
   TDX_FUZZ_BOOT_LOADER,
-  TDX_FUZZ_BLK_DEV_INIT
+  TDX_FUZZ_BLK_DEV_INIT,
+  TDX_FUZZ_MAX
 };
 
 VOID

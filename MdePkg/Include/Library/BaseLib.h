@@ -21,12 +21,6 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #if   defined (MDE_CPU_IA32) || defined (MDE_CPU_X64)
 #define KAFL_ACTIVATE
 #include <Library/KaflAgentLib.h>
-
-/** KAFL HARNESS CONFIGURATION START **/
-// #define CONFIG_KAFL_FUZZ_BOOT_LOADER
-// #define CONFIG_KAFL_FUZZ_VIRTIO_READ
-#define CONFIG_KAFL_FUZZ_BLK_DEV_INIT
-/** KAFL HARNESS CONFIGURATION END **/
 #endif
 
 
