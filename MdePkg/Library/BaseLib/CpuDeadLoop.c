@@ -31,7 +31,6 @@ CpuDeadLoop (
 #ifdef KAFL_ACTIVATE
   /* fuzz test return OK */
   kafl_hprintf("kAFL %a: Exit on CPU deadloop\n", __FUNCTION__);
-  kafl_show_state();
   kafl_fuzz_event(KAFL_DONE);
 #endif
   for (Index = 0; Index == 0;);

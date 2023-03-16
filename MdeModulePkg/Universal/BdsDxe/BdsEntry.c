@@ -1088,12 +1088,10 @@ BdsEntry (
   // EfiBootManagerFreeLoadOption (&PlatformDefaultBootOption);
 
   DEBUG ((EFI_D_ERROR, "[Bds] Unable to boot!\n"));
-  //
-  // kAFL: finish execution before entering deadloop
-  //
+#ifdef KAFL_ACTIVATE
   kafl_hprintf("kAFL: stop fuzzing loop before entering unable to boot CPU deadloop\n");
-  kafl_show_state();
   kafl_fuzz_event(KAFL_DONE);
+#endif
   PlatformBootManagerUnableToBoot ();
   CpuDeadLoop ();
 }

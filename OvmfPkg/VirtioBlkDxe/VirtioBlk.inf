@@ -31,7 +31,6 @@
   UefiDriverEntryPoint
   UefiLib
   VirtioLib
-  KaflAgentLib
 
 [Protocols]
   gEfiBlockIoProtocolGuid   ## BY_START
