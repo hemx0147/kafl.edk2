@@ -150,12 +150,6 @@ internal_agent_done (
 {
   UINT64 ReleaseNum;
 
-  // turn off this check for now to bypass issues with reading agent state across modules
-  // if (!agent_state->agent_initialized)
-  // {
-  //   kafl_habort("Attempt to finish kAFL run but never initialized\n");
-  // }
-
   // TODO: add agent stats / file dumping of agent stats
 
   //

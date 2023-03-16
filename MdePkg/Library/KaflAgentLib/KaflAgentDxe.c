@@ -81,6 +81,11 @@ kafl_agent_done (
   )
 {
   kafl_get_agent_state();
+
+  if (!g_agent_state.agent_initialized)
+  {
+    kafl_habort("Attempt to finish kAFL run but never initialized\n");
+  }
   internal_agent_done(&g_agent_state);
 }
 
