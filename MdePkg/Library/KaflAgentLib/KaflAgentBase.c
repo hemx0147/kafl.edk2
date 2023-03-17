@@ -15,6 +15,7 @@ kafl_agent_done (
   VOID
   )
 {
+  kafl_hprintf("kAFL %a\n", __FUNCTION__);
   internal_agent_done(&g_agent_state);
 }
 
@@ -24,6 +25,7 @@ kafl_show_state (
   VOID
   )
 {
+  kafl_hprintf("kAFL %a\n", __FUNCTION__);
   internal_show_state(&g_agent_state);
 }
 
@@ -37,6 +39,7 @@ kafl_fuzz_buffer (
   IN  CONST enum tdx_fuzz_loc type
   )
 {
+  kafl_hprintf("kAFL %a\n", __FUNCTION__);
   return internal_fuzz_buffer(fuzz_buf, orig_buf, addr, num_bytes, type, &g_agent_state);
 }
 
@@ -47,5 +50,6 @@ kafl_fuzz_event (
   IN  enum kafl_event  e
   )
 {
+  kafl_hprintf("kAFL %a\n", __FUNCTION__);
   internal_fuzz_event(e, &g_agent_state);
 }
