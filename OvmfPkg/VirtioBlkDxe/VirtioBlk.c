@@ -768,11 +768,16 @@ VirtioBlkInit (
     goto Failed;
   }
 
+  DEBUG_FCALL;
+#ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
+  kafl_fuzz_event(KAFL_ENABLE);
+#endif
+
   //
   // step 4a -- retrieve and validate features
   //
   Status = Dev->VirtIo->GetDeviceFeatures (Dev->VirtIo, &Features);
-
+  kafl_hprintf("Got device Features 0x%x\n", Features);
   if (EFI_ERROR (Status)) {
     goto Failed;
   }
@@ -906,14 +911,8 @@ VirtioBlkInit (
   //
   // step 5 -- Report understood features.
   //
-#ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
-  kafl_fuzz_event(KAFL_ENABLE);
-#endif
   if (Dev->VirtIo->Revision < VIRTIO_SPEC_REVISION (1, 0, 0)) {
     Features &= ~(UINT64)(VIRTIO_F_VERSION_1 | VIRTIO_F_IOMMU_PLATFORM);
-#ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
-    kafl_fuzz_buffer((UINT64*) &Features, (UINT64*) &Features, (UINTN*) &Features, sizeof(UINT64), TDX_FUZZ_BLK_DEV);
-#endif
     Status = Dev->VirtIo->SetGuestFeatures (Dev->VirtIo, Features);
     if (EFI_ERROR (Status)) {
       goto UnmapQueue;
@@ -952,7 +951,7 @@ VirtioBlkInit (
 
 #ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
   // fuzz BlockIoMedia
-  kafl_fuzz_buffer((UINT64*) Dev->BlockIo.Media, (UINT64*) Dev->BlockIo.Media, (UINTN*) Dev->BlockIo.Media, sizeof(EFI_BLOCK_IO_MEDIA), TDX_FUZZ_BLK_DEV);
+  // kafl_fuzz_buffer((UINT64*) Dev->BlockIo.Media, (UINT64*) Dev->BlockIo.Media, (UINTN*) Dev->BlockIo.Media, sizeof(EFI_BLOCK_IO_MEDIA), TDX_FUZZ_BLK_DEV_INIT);
 #endif
 
   DEBUG ((DEBUG_INFO, "%a: LbaSize=0x%x[B] NumBlocks=0x%Lx[Lba]\n",

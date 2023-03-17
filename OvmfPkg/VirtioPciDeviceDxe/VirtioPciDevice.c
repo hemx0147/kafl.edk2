@@ -77,6 +77,9 @@ VirtioPciIoRead (
   UINTN                     Count;
   EFI_PCI_IO_PROTOCOL_WIDTH Width;
   EFI_PCI_IO_PROTOCOL       *PciIo;
+  EFI_STATUS                Status;
+
+  DEBUG_FCALL;
 
   ASSERT (FieldSize == BufferSize);
 
@@ -117,7 +120,7 @@ VirtioPciIoRead (
       return EFI_INVALID_PARAMETER;
   }
 
-  return PciIo->Io.Read (
+  Status = PciIo->Io.Read (
                      PciIo,
                      Width,
                      PCI_BAR_IDX0,
@@ -125,6 +128,12 @@ VirtioPciIoRead (
                      Count,
                      Buffer
                      );
+  // inject fuzzing input here, but only for virtio pci blk dev init
+#ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
+  kafl_hprintf("%a: inject fuzzing input\n", __FUNCTION__);
+  kafl_fuzz_buffer(Buffer, Buffer, (UINTN*) Buffer, BufferSize, TDX_FUZZ_VIRTIO_PCI_IO);
+#endif
+  return Status;
 }
 
 /**
