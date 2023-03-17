@@ -1091,6 +1091,7 @@ BdsEntry (
 #ifdef KAFL_ACTIVATE
   kafl_hprintf("kAFL: stop fuzzing loop before entering unable to boot CPU deadloop\n");
   kafl_fuzz_event(KAFL_DONE);
+  kafl_fuzz_event(KAFL_ABORT);
 #endif
   PlatformBootManagerUnableToBoot ();
   CpuDeadLoop ();
