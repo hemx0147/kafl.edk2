@@ -572,6 +572,8 @@ PciIoIoRead (
   EFI_STATUS    Status;
   PCI_IO_DEVICE *PciIoDevice;
 
+  DEBUG_FCALL;
+
   PciIoDevice = PCI_IO_DEVICE_FROM_PCI_IO_THIS (This);
 
   if ((UINT32)Width >= EfiPciIoWidthMaximum) {
