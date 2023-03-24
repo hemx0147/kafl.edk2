@@ -26,8 +26,12 @@ typedef struct agent_flags {
   BOOLEAN dump_callers;
 } agent_flags;
 
-// store agent state as struct in UEFI var to make it available accross compilation units
+// store agent state as struct in UEFI var to make it available accross compilation units in DXE phase
+// Note: keep struct members fixed-length to be able to use copy-assignment operator
+#define AGENT_STATE_ID "KAFLSTATE"
+#define AGENT_STATE_ID_SIZE 10     // length of kafl state id string
 typedef struct agent_state_s {
+  CHAR8 id_string[AGENT_STATE_ID_SIZE];
   BOOLEAN agent_initialized;
   BOOLEAN fuzz_enabled;
   BOOLEAN exit_at_eof;
@@ -46,6 +50,7 @@ typedef struct agent_state_s {
   UINT32 ve_mis;
   UINT32 ob_num;
   UINT32 ob_pos;
+  UINT8 *agent_state_address;
 } agent_state_t;
 
 
@@ -103,6 +108,28 @@ EFIAPI
 internal_fuzz_event (
   IN  enum kafl_event  e,
   IN  OUT  agent_state_t *agent_state
+);
+
+/**
+  Check whether global agent state struct was already initialized and, if yes,
+  copy its contents to the local agent state struct.
+
+  If the global agent state was not yet initialized, then the local state
+  remains unmodified.
+**/
+VOID
+EFIAPI
+update_local_state (
+  VOID
+);
+
+/**
+  Copy the contents of the local agent state to the global agent state.
+**/
+VOID
+EFIAPI
+update_global_state (
+  VOID
 );
 
 #endif

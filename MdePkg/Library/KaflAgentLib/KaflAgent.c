@@ -180,10 +180,6 @@ kafl_agent_init (
   IN  OUT agent_state_t   *agent_state
   )
 {
-  UINTN payload_buffer_size;
-  UINTN observed_buffer_size;
-  UINT8 *payload_buffer;
-  UINT8 *observed_buffer;
   UINT8 *ve_buf;
   UINT32 ve_num;
   UINT32 ve_pos;
@@ -195,6 +191,11 @@ kafl_agent_init (
   host_config_t host_config = {0};
   agent_config_t agent_config = {0};
   agent_flags agent_flags = {0};
+
+  UINTN payload_buffer_size = agent_state->payload_buffer_size;
+  UINTN observed_buffer_size = agent_state->observed_buffer_size;
+  UINT8 *payload_buffer = agent_state->payload_buffer;
+  UINT8 *observed_buffer = agent_state->observed_buffer;
 
   if (agent_state->agent_initialized)
   {
@@ -232,17 +233,23 @@ kafl_agent_init (
   //
   // allocate page-aligned payload/observed buffer
   //
+#ifdef ASSUME_ALLOC
   payload_buffer_size = host_config.payload_buffer_size;
   observed_buffer_size = 2*host_config.payload_buffer_size;
   payload_buffer = (UINT8*)AllocateAlignedPages(EFI_SIZE_TO_PAGES(payload_buffer_size), EFI_PAGE_SIZE);
   observed_buffer = (UINT8*)AllocateAlignedPages(EFI_SIZE_TO_PAGES(observed_buffer_size), EFI_PAGE_SIZE);
+
+	if (!payload_buffer || !observed_buffer) {
+		kafl_habort("kAFL: Failed to allocate host payload buffer!\n");
+	}
+
   kafl_hprintf("kAFL %a: allocated %d bytes for payload at 0x%p\n", __FUNCTION__, payload_buffer_size, payload_buffer);
   kafl_hprintf("kAFL %a: allocated %d bytes for observed at 0x%p\n", __FUNCTION__, observed_buffer_size, observed_buffer);
-
-  if (!payload_buffer)
-  {
-    kafl_habort("kAFL: Failed to allocate host payload buffer!\n");
-  }
+#else
+	if (host_config.payload_buffer_size > PAYLOAD_MAX_SIZE) {
+		kafl_habort("kAFL: Insufficient payload buffer size!\n");
+	}
+#endif
 
   //
   // ensure payload is paged in
@@ -404,11 +411,13 @@ internal_fuzz_buffer (
 
   if (!agent_state->fuzz_enabled)
   {
+    kafl_hprintf("kAFL: agent fuzzing not yet enabled. Not injecting any payload.\n");
     return 0;
   }
 
   if (!agent_state->agent_initialized)
   {
+    kafl_hprintf("kAFL: agent not yet initialized. Initializing...\n");
     kafl_agent_init(agent_state);
   }
 
@@ -453,6 +462,7 @@ internal_fuzz_event (
       pr_warn("[*] Agent start!\n");
       kafl_agent_init(agent_state);
       agent_state->fuzz_enabled = TRUE;
+      kafl_hprintf("kAFL: init done.\n");
       return;
     case KAFL_ENABLE:
       pr_warn("[*] Agent enable!\n");
