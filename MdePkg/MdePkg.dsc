@@ -32,7 +32,6 @@
 [LibraryClasses]
   SafeIntLib|MdePkg/Library/BaseSafeIntLib/BaseSafeIntLib.inf
   KaflAgentLib|MdePkg/Library/KaflAgentLib/KaflAgentBaseLib.inf
-  KaflAgentLib|MdePkg/Library/KaflAgentLib/KaflAgentDxeLib.inf
 
 [Components]
   MdePkg/Library/UefiFileHandleLib/UefiFileHandleLib.inf
