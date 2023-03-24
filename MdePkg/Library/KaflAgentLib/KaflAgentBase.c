@@ -72,7 +72,6 @@ kafl_agent_done (
   )
 {
   kafl_hprintf("kAFL %a\n", __FUNCTION__);
-  update_local_state();
   internal_agent_done(&g_agent_state);
 }
 
@@ -101,6 +100,7 @@ kafl_fuzz_buffer (
 
   kafl_hprintf("kAFL %a\n", __FUNCTION__);
   update_local_state();
+  internal_show_state(&g_agent_state);
   RequestedBytes = internal_fuzz_buffer(fuzz_buf, orig_buf, addr, num_bytes, type, &g_agent_state);
   update_global_state();
 
@@ -117,6 +117,7 @@ kafl_fuzz_event (
   kafl_hprintf("kAFL %a\n", __FUNCTION__);
 
   update_local_state();
+  internal_show_state(&g_agent_state);
   internal_fuzz_event(e, &g_agent_state);
   update_global_state();
 }

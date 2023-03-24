@@ -167,9 +167,27 @@ internal_show_state (
   agent_state_t *agent_state
   )
 {
-  kafl_hprintf("kAFL: print current fuzzer state\n");
-  kafl_hprintf("  agent_init: %d\n", agent_state->agent_initialized);
+  kafl_hprintf("kAFL local agent state at 0x%p, size %d (0x%x):\n", agent_state, sizeof(*agent_state), sizeof(*agent_state));
+  kafl_hprintf("  id_string: %a\n", agent_state->id_string);
+  kafl_hprintf("  agent_initialized: %d\n", agent_state->agent_initialized);
   kafl_hprintf("  fuzz_enabled: %d\n", agent_state->fuzz_enabled);
+  kafl_hprintf("  exit_at_eof: %d\n", agent_state->exit_at_eof);
+  kafl_hprintf("  agent_flags: 0x%p\n", agent_state->agent_flags);
+  kafl_hprintf("  agent_config: 0x%p\n", agent_state->agent_config);
+  kafl_hprintf("  host_config: 0x%p\n", agent_state->host_config);
+  kafl_hprintf("  dump_file: 0x%p\n", agent_state->dump_file);
+  kafl_hprintf("  ve_buf: 0x%p\n", agent_state->ve_buf);
+  kafl_hprintf("  ob_buf: 0x%p\n", agent_state->ob_buf);
+  kafl_hprintf("  payload_buffer: 0x%p\n", agent_state->payload_buffer);
+  kafl_hprintf("  observed_buffer: 0x%p\n", agent_state->observed_buffer);
+  kafl_hprintf("  payload_buffer_size: %d\n", agent_state->payload_buffer_size);
+  kafl_hprintf("  observed_buffer_size: %d\n", agent_state->observed_buffer_size);
+  kafl_hprintf("  ve_num: %d\n", agent_state->ve_num);
+  kafl_hprintf("  ve_pos: %d\n", agent_state->ve_pos);
+  kafl_hprintf("  ve_mis: %d\n", agent_state->ve_mis);
+  kafl_hprintf("  ob_num: %d\n", agent_state->ob_num);
+  kafl_hprintf("  ob_pos: %d\n", agent_state->ob_pos);
+  kafl_hprintf("  agent_state_address: 0x%p\n", agent_state->agent_state_address);
 }
 
 // TODO: create fns for setting variable init values, set-/copy-/allocate memory
