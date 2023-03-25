@@ -64,17 +64,6 @@ STATIC agent_state_t g_agent_state = {
 #endif
 
 
-
-VOID
-EFIAPI
-kafl_agent_done (
-  VOID
-  )
-{
-  kafl_hprintf("kAFL %a\n", __FUNCTION__);
-  internal_agent_done(&g_agent_state);
-}
-
 VOID
 EFIAPI
 kafl_show_state (

@@ -72,17 +72,9 @@ kafl_habort (
   CHAR8   *Msg
 );
 
-VOID EFIAPI kafl_agent_done (VOID) __attribute__((unused));
-
 VOID
 EFIAPI
 kafl_agent_done (
-  VOID
-);
-
-VOID
-EFIAPI
-internal_agent_done (
   IN  agent_state_t   *agent_state
 );
 

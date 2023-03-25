@@ -144,11 +144,16 @@ kafl_hprintf (
 
 VOID
 EFIAPI
-internal_agent_done (
+kafl_agent_done (
   IN  agent_state_t   *agent_state
   )
 {
   UINT64 ReleaseNum;
+
+  if (!agent_state->agent_initialized)
+  {
+    kafl_habort("Attempt to finish kAFL run but never initialized\n");
+  }
 
   // TODO: add agent stats / file dumping of agent stats
 
@@ -402,7 +407,7 @@ _internal_fuzz_buffer (
   {
     kafl_hprintf("kAFL %a: end here without return\n", __FUNCTION__);
     /* no return */
-    internal_agent_done(agent_state);
+    kafl_agent_done(agent_state);
   }
   return 0;
 }
@@ -453,7 +458,7 @@ internal_fuzz_buffer (
     if (ob_pos + num_bytes > ob_num)
     {
       pr_warn("Warning: insufficient space in dump_payload\n");
-      internal_agent_done(agent_state);
+      kafl_agent_done(agent_state);
     }
 
     CopyMem(ob_buf + ob_pos, fuzz_buf, num_fuzzed);
@@ -489,7 +494,7 @@ internal_fuzz_event (
       agent_state->fuzz_enabled = TRUE;
       return;
     case KAFL_DONE:
-      return internal_agent_done(agent_state);
+      return kafl_agent_done(agent_state);
     case KAFL_ABORT:
       return kafl_habort("kAFL got ABORT event.\n");
     default:
