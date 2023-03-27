@@ -9,6 +9,9 @@
 #include <Library/KaflAgentLib.h>
 #include <NyxHypercalls.h>
 
+
+#define ASSUME_ALLOC
+
 // dedicated assert for raising kAFL/harness level issues
 #define KAFL_ASSERT(Exp) \
   do { \

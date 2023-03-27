@@ -8,7 +8,6 @@
 #include <Library/BaseLib.h>          // AsciiStrnCmp
 
 
-#define ASSUME_ALLOC
 #ifdef ASSUME_ALLOC
 UINT8 *g_payload_buffer = NULL;
 UINT8 *g_observed_buffer = NULL;
