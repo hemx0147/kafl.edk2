@@ -172,26 +172,20 @@ internal_show_state (
   agent_state_t *agent_state
   )
 {
-  kafl_hprintf("kAFL local agent state at 0x%p, size %d (0x%x):\n", agent_state, sizeof(*agent_state), sizeof(*agent_state));
+  UINTN as_size = sizeof(*agent_state);
+
+  kafl_hprintf("kAFL local agent state at 0x%p, size %d (0x%x):\n", agent_state, as_size, as_size);
   kafl_hprintf("  id_string: %a\n", agent_state->id_string);
   kafl_hprintf("  agent_initialized: %d\n", agent_state->agent_initialized);
   kafl_hprintf("  fuzz_enabled: %d\n", agent_state->fuzz_enabled);
-  kafl_hprintf("  exit_at_eof: %d\n", agent_state->exit_at_eof);
-  kafl_hprintf("  agent_flags: 0x%p\n", agent_state->agent_flags);
   kafl_hprintf("  agent_config: 0x%p\n", agent_state->agent_config);
   kafl_hprintf("  host_config: 0x%p\n", agent_state->host_config);
-  kafl_hprintf("  dump_file: 0x%p\n", agent_state->dump_file);
-  kafl_hprintf("  ve_buf: 0x%p\n", agent_state->ve_buf);
-  kafl_hprintf("  ob_buf: 0x%p\n", agent_state->ob_buf);
-  kafl_hprintf("  payload_buffer: 0x%p\n", agent_state->payload_buffer);
-  kafl_hprintf("  observed_buffer: 0x%p\n", agent_state->observed_buffer);
   kafl_hprintf("  payload_buffer_size: %d\n", agent_state->payload_buffer_size);
-  kafl_hprintf("  observed_buffer_size: %d\n", agent_state->observed_buffer_size);
+  kafl_hprintf("  payload_buffer: 0x%p\n", agent_state->payload_buffer);
+  kafl_hprintf("  ve_buf: 0x%p\n", agent_state->ve_buf);
   kafl_hprintf("  ve_num: %d\n", agent_state->ve_num);
   kafl_hprintf("  ve_pos: %d\n", agent_state->ve_pos);
   kafl_hprintf("  ve_mis: %d\n", agent_state->ve_mis);
-  kafl_hprintf("  ob_num: %d\n", agent_state->ob_num);
-  kafl_hprintf("  ob_pos: %d\n", agent_state->ob_pos);
   kafl_hprintf("  agent_state_address: 0x%p\n", agent_state->agent_state_address);
 }
 
@@ -207,18 +201,12 @@ kafl_agent_init (
   UINT32 ve_num;
   UINT32 ve_pos;
   UINT32 ve_mis;
-  UINT8 *ob_buf;
-  UINT32 ob_num;
-  UINT32 ob_pos;
   kAFL_payload *payload;
   host_config_t host_config = {0};
   agent_config_t agent_config = {0};
-  agent_flags agent_flags = {0};
 
   UINTN payload_buffer_size = agent_state->payload_buffer_size;
-  UINTN observed_buffer_size = agent_state->observed_buffer_size;
   UINT8 *payload_buffer = agent_state->payload_buffer;
-  UINT8 *observed_buffer = agent_state->observed_buffer;
 
   if (agent_state->agent_initialized)
   {
@@ -254,20 +242,17 @@ kafl_agent_init (
   }
 
   //
-  // allocate page-aligned payload/observed buffer
+  // allocate page-aligned payload buffer
   //
 #ifdef ASSUME_ALLOC
   payload_buffer_size = host_config.payload_buffer_size;
-  observed_buffer_size = 2*host_config.payload_buffer_size;
   payload_buffer = (UINT8*)AllocateAlignedPages(EFI_SIZE_TO_PAGES(payload_buffer_size), EFI_PAGE_SIZE);
-  observed_buffer = (UINT8*)AllocateAlignedPages(EFI_SIZE_TO_PAGES(observed_buffer_size), EFI_PAGE_SIZE);
 
-	if (!payload_buffer || !observed_buffer) {
+	if (!payload_buffer) {
 		kafl_habort("kAFL: Failed to allocate host payload buffer!\n");
 	}
 
   kafl_hprintf("kAFL %a: allocated %d bytes for payload at 0x%p\n", __FUNCTION__, payload_buffer_size, payload_buffer);
-  kafl_hprintf("kAFL %a: allocated %d bytes for observed at 0x%p\n", __FUNCTION__, observed_buffer_size, observed_buffer);
 #else
 	if (host_config.payload_buffer_size > PAYLOAD_MAX_SIZE) {
 		kafl_habort("kAFL: Insufficient payload buffer size!\n");
@@ -278,7 +263,6 @@ kafl_agent_init (
   // ensure payload is paged in
   //
   SetMem(payload_buffer, payload_buffer_size, 0xff);
-  SetMem(observed_buffer, observed_buffer_size, 0xff);
 
   //
   // submit payload buffer address to HV
@@ -320,28 +304,9 @@ kafl_agent_init (
     kafl_hprintf("\t dump_observed = %u\n",         payload->flags.dump_observed);
     kafl_hprintf("\t dump_stats = %u\n",            payload->flags.dump_stats);
     kafl_hprintf("\t dump_callers = %u\n",          payload->flags.dump_callers);
-
-    // debugfs cannot handle the bitfield..
-    agent_flags.dump_observed = payload->flags.dump_observed;
-    agent_flags.dump_stats    = payload->flags.dump_stats;
-    agent_flags.dump_callers  = payload->flags.dump_callers;
-
-    // dump modes are exclusive - sharing the observed_* and ob_* buffers
-    KAFL_ASSERT(!(agent_flags.dump_observed && agent_flags.dump_callers));
-    KAFL_ASSERT(!(agent_flags.dump_observed && agent_flags.dump_stats));
-    KAFL_ASSERT(!(agent_flags.dump_callers  && agent_flags.dump_stats));
   }
-
-  if (agent_flags.dump_observed) {
-    ob_buf = observed_buffer;
-    ob_num = sizeof(observed_buffer);
-    ob_pos = 0;
-  }
-  kafl_hprintf("kAFL %a: set observed buf: 0x%p, ob_num: %d\n", __FUNCTION__, ob_buf, ob_num);
 
   // TODO: add kafl stats clear
-
-  // TODO: add all other agent state changes
 
   //
   // initialize agent state
@@ -350,18 +315,12 @@ kafl_agent_init (
   agent_state->agent_initialized = TRUE;
   agent_state->payload_buffer = payload_buffer;
   agent_state->payload_buffer_size = payload_buffer_size;
-  agent_state->observed_buffer = observed_buffer;
-  agent_state->observed_buffer_size = observed_buffer_size;
-  agent_state->agent_flags = agent_flags;
   agent_state->host_config = host_config;
   agent_state->agent_config = agent_config;
   agent_state->ve_buf = ve_buf;
   agent_state->ve_num = ve_num;
   agent_state->ve_pos = ve_pos;
   agent_state->ve_mis = ve_mis;
-  agent_state->ob_buf = ob_buf;
-  agent_state->ob_num = ob_num;
-  agent_state->ob_pos = ob_pos;
 
   //
   // start coverage tracing
@@ -387,29 +346,26 @@ _internal_fuzz_buffer (
   // TODO: fuzzer kickstart value must be at least num_bytes larger, otherwise fuzzer won't work
   kafl_hprintf("kAFL %a: Fuzz buf 0x%p Size %d (0x%x)\n", __FUNCTION__, buf, num_bytes, num_bytes);
   kafl_hprintf("kAFL %a: ve_pos: %d, num_bytes: %d, ve_pos + num_bytes: %d, ve_num: %d\n", __FUNCTION__, ve_pos, num_bytes, ve_pos + num_bytes, ve_num);
-  if (ve_pos + num_bytes <= ve_num)
+  if (ve_pos + num_bytes > ve_num)
   {
-    kafl_hprintf("kAFL %a: CopyMem ve_pos + ve_buf: 0x%p, num_bytes: %d\n", __FUNCTION__, ve_pos + ve_buf, num_bytes);
-    CopyMem(buf, ve_buf + ve_pos, num_bytes);
-    ve_pos += num_bytes;
-    agent_state->ve_pos = ve_pos;
-    kafl_hprintf("kAFL %a: new ve_pos: %d\n", __FUNCTION__, ve_pos);
-    return num_bytes;
+    //
+    // insufficient fuzz buffer
+    //
+    ve_mis += num_bytes;
+    agent_state->ve_mis = ve_mis;
+    kafl_hprintf("kAFL %a: insufficient FuzBuf. ve_mis: %d\n", __FUNCTION__, ve_mis);
+    kafl_hprintf("kAFL %a: end here without return\n", __FUNCTION__);
+    kafl_agent_done(agent_state);
+    /* no return */
   }
 
-  //
-  // insufficient fuzz buffer
-  //
-  ve_mis += num_bytes;
-  agent_state->ve_mis = ve_mis;
-  kafl_hprintf("kAFL %a: insufficient FuzBuf. ve_mis: %d\n", __FUNCTION__, ve_mis);
-  if (agent_state->exit_at_eof && !agent_state->agent_flags.dump_observed)
-  {
-    kafl_hprintf("kAFL %a: end here without return\n", __FUNCTION__);
-    /* no return */
-    kafl_agent_done(agent_state);
-  }
-  return 0;
+  kafl_hprintf("kAFL %a: CopyMem ve_pos + ve_buf: 0x%p, num_bytes: %d\n", __FUNCTION__, ve_pos + ve_buf, num_bytes);
+  CopyMem(buf, ve_buf + ve_pos, num_bytes);
+  ve_pos += num_bytes;
+  agent_state->ve_pos = ve_pos;
+  kafl_hprintf("kAFL %a: new ve_pos: %d\n", __FUNCTION__, ve_pos);
+
+  return num_bytes;
 }
 
 UINTN
@@ -424,9 +380,6 @@ internal_fuzz_buffer (
   )
 {
   UINTN num_fuzzed = 0;
-  UINT8 *ob_buf = agent_state->ob_buf;
-  UINT32 ob_num = agent_state->ob_num;
-  UINT32 ob_pos = agent_state->ob_pos;
 
   // TODO: add fuzz filter
 
@@ -452,22 +405,6 @@ internal_fuzz_buffer (
   kafl_hprintf("kAFL %a: Buffer 0x%p, Size %d (0x%x) after injection:\n", __FUNCTION__, fuzz_buf, num_bytes, num_bytes);
   kafl_dump_buffer(fuzz_buf, num_bytes < 32 ? num_bytes : 32);
   kafl_hprintf("kAFL %a: num_fuzzed: %d (0x%x)\n", __FUNCTION__, num_fuzzed, num_fuzzed);
-
-  if (agent_state->agent_flags.dump_observed)
-  {
-    if (ob_pos + num_bytes > ob_num)
-    {
-      pr_warn("Warning: insufficient space in dump_payload\n");
-      kafl_agent_done(agent_state);
-    }
-
-    CopyMem(ob_buf + ob_pos, fuzz_buf, num_fuzzed);
-    ob_pos += num_fuzzed;
-    CopyMem(ob_buf + ob_pos, orig_buf, num_bytes - num_fuzzed);
-    ob_pos += (num_bytes - num_fuzzed);
-
-    agent_state->ob_pos = ob_pos;
-  }
 
   return num_fuzzed;
 }

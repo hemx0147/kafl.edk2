@@ -9,55 +9,34 @@
 
 
 #ifdef ASSUME_ALLOC
-UINT8 *g_payload_buffer = NULL;
-UINT8 *g_observed_buffer = NULL;
-
 STATIC agent_state_t g_agent_state = {
   .id_string = AGENT_STATE_ID,
   .agent_initialized = FALSE,
   .fuzz_enabled = FALSE,
-  .exit_at_eof = TRUE,
-  .agent_flags = { 0 },
   .agent_config = { 0 },
   .host_config = { 0 },
-  .dump_file = { 0 },
-  .payload_buffer = NULL,
-  .observed_buffer = NULL,
-  .ve_buf = NULL,
-  .ob_buf = NULL,
   .payload_buffer_size = 0,
-  .observed_buffer_size = 0,
+  .payload_buffer = NULL,
+  .ve_buf = NULL,
   .ve_num = 0,
   .ve_pos = 0,
   .ve_mis = 0,
-  .ob_num = 0,
-  .ob_pos = 0,
   .agent_state_address = (UINT8*)KAFL_AGENT_STATE_STRUCT_ADDR
 };
 #else
 UINT8 g_payload_buffer[PAYLOAD_MAX_SIZE / 8] __attribute__((aligned(EFI_PAGE_SIZE)));
-UINT8 g_observed_buffer[PAYLOAD_MAX_SIZE/ 4] __attribute__((aligned(EFI_PAGE_SIZE)));
-
 STATIC agent_state_t g_agent_state = {
   .id_string = AGENT_STATE_ID,
   .agent_initialized = FALSE,
   .fuzz_enabled = FALSE,
-  .exit_at_eof = TRUE,
-  .agent_flags = { 0 },
   .agent_config = { 0 },
   .host_config = { 0 },
-  .dump_file = { 0 },
-  .payload_buffer = g_payload_buffer,
-  .observed_buffer = g_observed_buffer,
-  .ve_buf = NULL,
-  .ob_buf = NULL,
   .payload_buffer_size = PAYLOAD_MAX_SIZE / 8,
-  .observed_buffer_size = PAYLOAD_MAX_SIZE / 4,
+  .payload_buffer = g_payload_buffer, // this might not work (not constant?)
+  .ve_buf = NULL,
   .ve_num = 0,
   .ve_pos = 0,
   .ve_mis = 0,
-  .ob_num = 0,
-  .ob_pos = 0,
   .agent_state_address = (UINT8*)KAFL_AGENT_STATE_STRUCT_ADDR
 };
 #endif

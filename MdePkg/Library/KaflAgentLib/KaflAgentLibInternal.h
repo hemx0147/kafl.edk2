@@ -12,22 +12,6 @@
 
 #define ASSUME_ALLOC
 
-// dedicated assert for raising kAFL/harness level issues
-#define KAFL_ASSERT(Exp) \
-  do { \
-    if (!(Exp)) { \
-      kafl_hprintf("kAFL ASSERT at %s:%d, %s\n", __FILE__, __LINE__, #Exp); \
-      kafl_habort("assertion fail (see hprintf logs)"); \
-    } \
-  } while (0)
-
-
-// TODO: check kernel agent implementation for correct definition
-typedef struct agent_flags {
-  BOOLEAN dump_observed;
-  BOOLEAN dump_stats;
-  BOOLEAN dump_callers;
-} agent_flags;
 
 // store agent state as struct in UEFI var to make it available accross compilation units in DXE phase
 // Note: keep struct members fixed-length to be able to use copy-assignment operator
@@ -37,22 +21,14 @@ typedef struct agent_state_s {
   CHAR8 id_string[AGENT_STATE_ID_SIZE];
   BOOLEAN agent_initialized;
   BOOLEAN fuzz_enabled;
-  BOOLEAN exit_at_eof;
-  agent_flags agent_flags;
   agent_config_t agent_config;
   host_config_t host_config;
-  kafl_dump_file_t dump_file;
-  UINT8 *payload_buffer;
-  UINT8 *observed_buffer;
-  UINT8 *ve_buf;
-  UINT8 *ob_buf;
   UINTN payload_buffer_size;
-  UINTN observed_buffer_size;
+  UINT8 *payload_buffer;
+  UINT8 *ve_buf;
   UINT32 ve_num;
   UINT32 ve_pos;
   UINT32 ve_mis;
-  UINT32 ob_num;
-  UINT32 ob_pos;
   UINT8 *agent_state_address;
 } agent_state_t;
 
