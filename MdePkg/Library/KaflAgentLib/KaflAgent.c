@@ -389,7 +389,7 @@ _internal_fuzz_buffer (
   kafl_hprintf("kAFL %a: ve_pos: %d, num_bytes: %d, ve_pos + num_bytes: %d, ve_num: %d\n", __FUNCTION__, ve_pos, num_bytes, ve_pos + num_bytes, ve_num);
   if (ve_pos + num_bytes <= ve_num)
   {
-    kafl_hprintf("kAFL %a: CopyMem ve_pos + ve_buf: %d, num_bytes: %d\n", __FUNCTION__, ve_pos + ve_buf, num_bytes);
+    kafl_hprintf("kAFL %a: CopyMem ve_pos + ve_buf: 0x%p, num_bytes: %d\n", __FUNCTION__, ve_pos + ve_buf, num_bytes);
     CopyMem(buf, ve_buf + ve_pos, num_bytes);
     ve_pos += num_bytes;
     agent_state->ve_pos = ve_pos;
