@@ -8,7 +8,7 @@
 #include <Library/BaseLib.h>          // AsciiStrnCmp
 
 
-#ifdef ASSUME_ALLOC
+#ifdef KAFL_ASSUME_ALLOC
 STATIC agent_state_t g_agent_state = {
   .id_string = AGENT_STATE_ID,
   .agent_initialized = FALSE,

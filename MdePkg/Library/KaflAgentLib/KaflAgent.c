@@ -255,7 +255,7 @@ kafl_agent_init (
   //
   // allocate page-aligned payload buffer
   //
-#ifdef ASSUME_ALLOC
+#ifdef KAFL_ASSUME_ALLOC
   payload_buffer_size = host_config.payload_buffer_size;
   payload_buffer = (UINT8*)AllocateAlignedPages(EFI_SIZE_TO_PAGES(payload_buffer_size), EFI_PAGE_SIZE);
 

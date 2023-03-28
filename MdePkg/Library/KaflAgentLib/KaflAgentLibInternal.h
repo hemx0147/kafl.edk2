@@ -10,7 +10,7 @@
 #include <NyxHypercalls.h>
 
 
-#define ASSUME_ALLOC
+#define KAFL_ASSUME_ALLOC
 
 
 // store agent state as struct in UEFI var to make it available accross compilation units in DXE phase
