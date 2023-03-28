@@ -15,6 +15,12 @@
 #define CONFIG_KAFL_FUZZ_BLK_DEV_INIT
 /** KAFL HARNESS CONFIGURATION END **/
 
+//! keep consistent with sizeof(agent_state_t)
+#define KAFL_AGENT_STATE_STRUCT_SIZE 128
+//! keep consistent with real address of agent state struct in SecMain
+#define KAFL_AGENT_STATE_STRUCT_ADDR 0xFFFDEFF4
+STATIC UINT8 *gKaflAgentStateStructAddr __attribute__((used)) = (UINT8*) KAFL_AGENT_STATE_STRUCT_ADDR;
+
 enum kafl_event {
   KAFL_ENABLE,
   KAFL_START,
@@ -36,20 +42,7 @@ enum kafl_event {
 };
 
 enum tdx_fuzz_loc {
-  TDX_FUZZ_MSR_READ,
-  TDX_FUZZ_MMIO_READ,
-  TDX_FUZZ_PORT_IN,
-  TDX_FUZZ_CPUID1,
-  TDX_FUZZ_CPUID2,
-  TDX_FUZZ_CPUID3,
-  TDX_FUZZ_CPUID4,
-  TDX_FUZZ_MSR_READ_ERR,
-  TDX_FUZZ_MSR_WRITE_ERR,
-  TDX_FUZZ_MAP_ERR,
-  TDX_FUZZ_PORT_IN_ERR,
   TDX_FUZZ_VIRTIO,
-  TDX_FUZZ_RANDOM,  /* kAFL */
-  TDX_FUZZ_DEBUGFS, /* kAFL */
   TDX_FUZZ_BOOT_LOADER,
   TDX_FUZZ_BLK_DEV_INIT,
   TDX_FUZZ_VIRTIO_PCI_IO,

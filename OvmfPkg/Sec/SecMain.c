@@ -49,6 +49,9 @@ typedef struct _TDX_WORK_AREA{
 }TDX_WORK_AREA;
 #endif
 
+// static memory space for kAFL agent state used for pre-DXE cross-module communication
+STATIC UINT8 gAgentStateSpace[KAFL_AGENT_STATE_STRUCT_SIZE] __attribute__((used)) = { 0 };  // size defined in kAFL agent lib
+
 #define SEC_IDT_ENTRY_COUNT  34
 
 typedef struct _SEC_IDT_TABLE {
@@ -958,6 +961,15 @@ SecCoreStartupWithStack (
   IA32_DESCRIPTOR             IdtDescriptor;
   UINT32                      Index;
   volatile UINT8              *Table;
+
+#ifdef KAFL_ACTIVATE
+  if ((UINT8*)gAgentStateSpace != gKaflAgentStateStructAddr)
+  {
+    // predefined agent state struct address does not match real address -> abort
+    kafl_hprintf("KAFL AGENT STATE ADDRESS MISMATCH! (expected: 0x%p, real: 0x%p)\n", gKaflAgentStateStructAddr, gAgentStateSpace);
+    kafl_fuzz_event(KAFL_ABORT);
+  }
+#endif
 
 #if defined (MDE_CPU_X64)
   EFI_STATUS                  Status;
