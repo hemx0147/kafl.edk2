@@ -132,7 +132,7 @@ update_global_state (
   agent_state_t gAS = *((agent_state_t*)gKaflAgentStateStructAddr);
   if (!state_is_equal(&gAS, &g_agent_state))
   {
-    kafl_habort("global & local agent state are not equal after copy!\n");
+    kafl_habort("global & local agent state are not equal after copy!\n", &g_agent_state);
   }
 
   kafl_hprintf("kAFL new state:");

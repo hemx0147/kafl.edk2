@@ -8,7 +8,7 @@
 #include <Library/PrintLib.h>             // AsciiVSPrint, AsciiVBPrint
 #include <Uefi/UefiBaseType.h>            // EFI_PAGE_MASK, EFI_SIZE_TO_PAGES
 #include <Library/BaseMemoryLib.h>        // SetMem, CopyMem
-#include <Library/MemoryAllocationLib.h>  // AllocateAlignedPages
+#include <Library/MemoryAllocationLib.h>  // AllocateAlignedPages, FreeAlignedPages
 
 #include <KaflAgentLibInternal.h>
 
@@ -67,9 +67,19 @@ kafl_raise_kasan (
 VOID
 EFIAPI
 kafl_habort (
-  CHAR8   *Msg
+  CHAR8   *Msg,
+  agent_state_t *agent_state
   )
 {
+  if (agent_state)
+  {
+    if (agent_state->payload_buffer && agent_state->payload_buffer_size > 0)
+    {
+      // free allocated payload buf only if agent state passed & initialized
+      kafl_hprintf("kAFL: free payload buffer at 0x%p, size %d\n", agent_state->payload_buffer, agent_state->payload_buffer_size);
+      FreeAlignedPages(agent_state->payload_buffer, EFI_SIZE_TO_PAGES(agent_state->payload_buffer_size));
+    }
+  }
   kAFL_hypercall(HYPERCALL_KAFL_USER_ABORT, (UINTN)Msg);
 }
 
@@ -110,7 +120,7 @@ hprintf_marker (
   //
   if (Format == NULL)
   {
-    kafl_habort("hprintf format is NULL\n");
+    kafl_habort("hprintf format is NULL\n", NULL);
   }
 
   //
@@ -152,7 +162,7 @@ kafl_agent_done (
 
   if (!agent_state->agent_initialized)
   {
-    kafl_habort("Attempt to finish kAFL run but never initialized\n");
+    kafl_habort("Attempt to finish kAFL run but never initialized\n", agent_state);
   }
 
   // TODO: add agent stats / file dumping of agent stats
@@ -211,7 +221,7 @@ kafl_agent_init (
 
   if (agent_state->agent_initialized)
   {
-    kafl_habort("Warning: Agent was already initialized!\n");
+    kafl_habort("Warning: Agent was already initialized!\n", agent_state);
   }
 
   kafl_hprintf("[*] Initialize kAFL Agent\n");
@@ -239,7 +249,7 @@ kafl_agent_init (
   if (host_config.host_magic != NYX_HOST_MAGIC ||
       host_config.host_version != NYX_HOST_VERSION) {
     kafl_hprintf("host_config magic/version mismatch!\n");
-    kafl_habort("GET_HOST_CNOFIG magic/version mismatch!\n");
+    kafl_habort("GET_HOST_CNOFIG magic/version mismatch!\n", agent_state);
   }
 
   //
@@ -250,13 +260,13 @@ kafl_agent_init (
   payload_buffer = (UINT8*)AllocateAlignedPages(EFI_SIZE_TO_PAGES(payload_buffer_size), EFI_PAGE_SIZE);
 
 	if (!payload_buffer) {
-		kafl_habort("kAFL: Failed to allocate host payload buffer!\n");
+		kafl_habort("kAFL: Failed to allocate host payload buffer!\n", agent_state);
 	}
 
   kafl_hprintf("kAFL %a: allocated %d bytes for payload at 0x%p\n", __FUNCTION__, payload_buffer_size, payload_buffer);
 #else
 	if (host_config.payload_buffer_size > PAYLOAD_MAX_SIZE) {
-		kafl_habort("kAFL: Insufficient payload buffer size!\n");
+		kafl_habort("kAFL: Insufficient payload buffer size!\n", agent_state);
 	}
 #endif
 
@@ -434,7 +444,7 @@ internal_fuzz_event (
     case KAFL_DONE:
       return kafl_agent_done(agent_state);
     case KAFL_ABORT:
-      return kafl_habort("kAFL got ABORT event.\n");
+      return kafl_habort("kAFL got ABORT event.\n", agent_state);
     default:
       break;
   }
@@ -458,8 +468,8 @@ internal_fuzz_event (
     case KAFL_REBOOT:
       return kafl_raise_panic();
     case KAFL_TIMEOUT:
-      return kafl_habort("TODO: add a timeout handler?!\n");
+      return kafl_habort("TODO: add a timeout handler?!\n", agent_state);
     default:
-      return kafl_habort("Unrecognized fuzz event.\n");
+      return kafl_habort("Unrecognized fuzz event.\n", agent_state);
   }
 }
