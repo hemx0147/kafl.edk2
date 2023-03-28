@@ -966,9 +966,7 @@ SecCoreStartupWithStack (
   if ((UINT8*)gAgentStateSpace != gKaflAgentStateStructAddr)
   {
     // predefined agent state struct address does not match real address -> abort
-    UINTN statesize = (UINTN) (sizeof(gAgentStateSpace) / sizeof(gAgentStateSpace[0]));
-    kafl_hprintf("pre-defined and real agent state addresses do not match! (expected: 0x%p, real: 0x%p)\n", gKaflAgentStateStructAddr, gAgentStateSpace);
-    kafl_hprintf("gAgentStateSpace at 0x%p, size %d (0x%x)\n", &gAgentStateSpace, statesize, statesize);
+    kafl_hprintf("KAFL AGENT STATE ADDRESS MISMATCH! (expected: 0x%p, real: 0x%p)\n", gKaflAgentStateStructAddr, gAgentStateSpace);
     kafl_fuzz_event(KAFL_ABORT);
   }
 #endif
