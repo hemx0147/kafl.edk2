@@ -163,6 +163,7 @@ kafl_agent_done (
   //
   kafl_hprintf("kAFL %a: Exiting kAFL loop\n", __FUNCTION__);
   ReleaseNum = agent_state->ve_mis * sizeof((agent_state->ve_buf)[0]);
+  update_global_state();
   kAFL_hypercall(HYPERCALL_KAFL_RELEASE, ReleaseNum);
 }
 
