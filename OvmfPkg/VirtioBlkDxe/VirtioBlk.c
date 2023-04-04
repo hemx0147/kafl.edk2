@@ -512,10 +512,6 @@ VirtioBlkReadBlocks (
            Buffer,
            FALSE       // RequestIsWrite
            );
-#ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
-  kafl_hprintf("Regular Exit\n");
-  kafl_fuzz_event(KAFL_DONE);
-#endif
   return Status;
 }
 
@@ -768,7 +764,6 @@ VirtioBlkInit (
     goto Failed;
   }
 
-  DEBUG_FCALL;
 #ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
   kafl_fuzz_event(KAFL_ENABLE);
 #endif
@@ -949,11 +944,6 @@ VirtioBlkInit (
   Dev->BlockIoMedia.LastBlock        = DivU64x32 (NumSectors,
                                          BlockSize / 512) - 1;
 
-#ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
-  // fuzz BlockIoMedia
-  // kafl_fuzz_buffer((UINT64*) Dev->BlockIo.Media, (UINT64*) Dev->BlockIo.Media, (UINTN*) Dev->BlockIo.Media, sizeof(EFI_BLOCK_IO_MEDIA), TDX_FUZZ_BLK_DEV_INIT);
-#endif
-
   DEBUG ((DEBUG_INFO, "%a: LbaSize=0x%x[B] NumBlocks=0x%Lx[Lba]\n",
     __FUNCTION__, Dev->BlockIoMedia.BlockSize,
     Dev->BlockIoMedia.LastBlock + 1));
@@ -1131,6 +1121,10 @@ VirtioBlkDriverBindingStart (
     goto CloseExitBoot;
   }
 
+#ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
+  kafl_hprintf("Regular Exit\n");
+  kafl_fuzz_event(KAFL_DONE);
+#endif
   return EFI_SUCCESS;
 
 CloseExitBoot:
@@ -1144,11 +1138,12 @@ CloseVirtIo:
          This->DriverBindingHandle, DeviceHandle);
 
 FreeVirtioBlk:
+  FreePool (Dev);
+
 #ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
   kafl_hprintf("Exit on Error\n");
   kafl_fuzz_event(KAFL_DONE);
 #endif
-  FreePool (Dev);
 
   return Status;
 }

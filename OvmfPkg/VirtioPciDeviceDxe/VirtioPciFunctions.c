@@ -51,6 +51,8 @@ VirtioPciDeviceRead (
 {
   VIRTIO_PCI_DEVICE         *Dev;
 
+  DEBUG_FCALL;
+
   Dev = VIRTIO_PCI_DEVICE_FROM_VIRTIO_DEVICE (This);
 
   return VirtioPciIoRead (Dev,
@@ -113,6 +115,10 @@ VirtioPciGetDeviceFeatures (
 
   Status = VirtioPciIoRead (Dev, VIRTIO_PCI_OFFSET_DEVICE_FEATURES,
              sizeof (UINT32), sizeof (UINT32), &Features32);
+#ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
+  kafl_hprintf("%a: inject fuzzing input\n", __FUNCTION__);
+  kafl_fuzz_buffer((VOID*)&Features32, (VOID*)&Features32, (UINTN*) &Features32, sizeof(UINT32), TDX_FUZZ_VIRTIO_PCI_IO);
+#endif
   if (!EFI_ERROR (Status)) {
     *DeviceFeatures = Features32;
   }

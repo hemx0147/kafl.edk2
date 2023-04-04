@@ -128,11 +128,6 @@ VirtioPciIoRead (
                      Count,
                      Buffer
                      );
-  // inject fuzzing input here, but only for virtio pci blk dev init
-#ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
-  kafl_hprintf("%a: inject fuzzing input\n", __FUNCTION__);
-  kafl_fuzz_buffer(Buffer, Buffer, (UINTN*) Buffer, BufferSize, TDX_FUZZ_VIRTIO_PCI_IO);
-#endif
   return Status;
 }
 
