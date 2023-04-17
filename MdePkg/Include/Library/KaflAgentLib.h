@@ -15,6 +15,7 @@
 // #define CONFIG_KAFL_FUZZ_BLK_DEV_INIT
 // #define CONFIG_KAFL_FUZZ_BLK_DEV_MEDIA_SMALL
 // #define CONFIG_KAFL_FUZZ_BLK_DEV_MEDIA_LARGE
+// #define CONFIG_KAFL_FUZZ_TDHOB
 /** KAFL HARNESS CONFIGURATION END **/
 
 //! keep consistent with sizeof(agent_state_t)
@@ -49,6 +50,7 @@ enum tdx_fuzz_loc {
   TDX_FUZZ_BLK_DEV_INIT,
   TDX_FUZZ_VIRTIO_PCI_IO,
   TDX_FUZZ_BLK_DEV_MEDIA,
+  TDX_FUZZ_TDHOB,
   TDX_FUZZ_MAX
 };
 
