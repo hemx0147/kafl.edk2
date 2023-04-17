@@ -169,6 +169,10 @@ TdxStartup(
 
   ZeroMem (&PlatformInfoHob, sizeof (PlatformInfoHob));
 
+#ifdef CONFIG_KAFL_FUZZ_TDHOB
+  kafl_fuzz_event(KAFL_ENABLE);
+  kafl_fuzz_buffer(VmmHobList, VmmHobList, (UINTN*)VmmHobList, sizeof MAGIC_TDHOBLIST, TDX_FUZZ_TDHOB);
+#else
   //
   // Hardcode TdHobList for SDV environment
   //
@@ -178,11 +182,15 @@ TdxStartup(
   // Dump HobList if DEBUG enabled
   //
   DumpTdHobList(VmmHobList);
+#endif
 
   //
   // Validate HobList
   //
   if (ValidateHobList (VmmHobList) == FALSE) {
+#ifdef CONFIG_KAFL_FUZZ_TDHOB
+    kafl_hprintf("Exit on Error from ValidateHobList\n");
+#endif
     ASSERT (FALSE);
     CpuDeadLoop ();
   }
@@ -196,6 +204,9 @@ TdxStartup(
   //
   Status = ProcessHobList (VmmHobList);
   if (EFI_ERROR (Status)) {
+#ifdef CONFIG_KAFL_FUZZ_TDHOB
+    kafl_hprintf("Exit on Error from ProcessHobList\n");
+#endif
     ASSERT (FALSE);
     CpuDeadLoop();
   }
@@ -321,6 +332,11 @@ TdxStartup(
     EFI_PAGE_SIZE,
     EfiACPIMemoryNVS
     );
+
+#ifdef CONFIG_KAFL_FUZZ_TDHOB
+  kafl_hprintf("Regular Exit\n");
+  kafl_fuzz_event(KAFL_DONE);
+#endif
 
   //
   // Load the DXE Core and transfer control to it
