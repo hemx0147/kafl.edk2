@@ -10,9 +10,6 @@
 #include <NyxHypercalls.h>
 
 
-#define KAFL_ASSUME_ALLOC
-
-
 // store agent state as struct in UEFI var to make it available accross compilation units in DXE phase
 // Note: keep struct members fixed-length to be able to use copy-assignment operator
 #define AGENT_STATE_ID "KAFLSTATE"

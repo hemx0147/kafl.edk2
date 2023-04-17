@@ -963,12 +963,31 @@ SecCoreStartupWithStack (
   volatile UINT8              *Table;
 
 #ifdef KAFL_ACTIVATE
+  // static memory space for kAFL agent payload buffer used for pre-DXE cross-module communication
+  // defining buffer in global space with aligned attribute causes errors so we define it here
+  // this is ok since this function never returns but only calls another function (-> stack is never unwinded)
+  UINT8 gAgentPayloadBufSpace[KAFL_AGENT_PAYLOAD_MAX_SIZE] __attribute__((aligned(EFI_PAGE_SIZE)));
+
+  BOOLEAN AbortExec = FALSE;
   if ((UINT8*)gAgentStateSpace != gKaflAgentStateStructAddr)
   {
-    // predefined agent state struct address does not match real address -> abort
     kafl_hprintf("KAFL AGENT STATE ADDRESS MISMATCH! (expected: 0x%p, real: 0x%p)\n", gKaflAgentStateStructAddr, gAgentStateSpace);
+    AbortExec = TRUE;
+  }
+
+  if ((UINT8*)gAgentPayloadBufSpace != gKaflAgentPayloadBufAddr)
+  {
+    kafl_hprintf("KAFL AGENT PAYLOAD BUFFER ADDRESS MISMATCH! (expected: 0x%p, real: 0x%p)\n", gKaflAgentPayloadBufAddr, gAgentPayloadBufSpace);
+    AbortExec = TRUE;
+  }
+
+  if (AbortExec)
+  {
     kafl_fuzz_event(KAFL_ABORT);
   }
+
+  kafl_hprintf("kAFL agent state struct at 0x%p, size %d (0x%x)\n", gAgentStateSpace, KAFL_AGENT_STATE_STRUCT_SIZE, KAFL_AGENT_STATE_STRUCT_SIZE);
+  kafl_hprintf("kAFL agent payload buffer at 0x%p, size %d (0x%x)\n", gAgentPayloadBufSpace, KAFL_AGENT_PAYLOAD_MAX_SIZE, KAFL_AGENT_PAYLOAD_MAX_SIZE);
 #endif
 
 #if defined (MDE_CPU_X64)
