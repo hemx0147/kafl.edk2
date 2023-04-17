@@ -9,7 +9,6 @@
 #include <Uefi/UefiBaseType.h>            // EFI_PAGE_MASK, EFI_SIZE_TO_PAGES
 #include <Library/BaseMemoryLib.h>        // SetMem, CopyMem
 #include <Library/MemoryAllocationLib.h>  // AllocateAlignedPages, FreeAlignedPages
-
 #include <KaflAgentLibInternal.h>
 
 
@@ -256,19 +255,25 @@ kafl_agent_init (
   // allocate page-aligned payload buffer
   //
 #ifdef KAFL_ASSUME_ALLOC
+  kafl_hprintf("kAFL: allocate payload buffer dynamically\n");
   payload_buffer_size = host_config.payload_buffer_size;
   payload_buffer = (UINT8*)AllocateAlignedPages(EFI_SIZE_TO_PAGES(payload_buffer_size), EFI_PAGE_SIZE);
+#else
+  kafl_hprintf("kAFL: allocate payload buffer statically\n");
+  payload_buffer_size = KAFL_AGENT_PAYLOAD_MAX_SIZE;
+  payload_buffer = (UINT8*)KAFL_AGENT_PAYLOAD_BUF_ADDR;
+#endif
 
 	if (!payload_buffer) {
 		kafl_habort("kAFL: Failed to allocate host payload buffer!\n", agent_state);
 	}
 
+  //? do we even need this check?
+	// if (host_config.payload_buffer_size > payload_buffer_size) {
+	// 	kafl_habort("kAFL: Insufficient payload buffer size!\n", agent_state);
+	// }
+
   kafl_hprintf("kAFL %a: allocated %d bytes for payload at 0x%p\n", __FUNCTION__, payload_buffer_size, payload_buffer);
-#else
-	if (host_config.payload_buffer_size > PAYLOAD_MAX_SIZE) {
-		kafl_habort("kAFL: Insufficient payload buffer size!\n", agent_state);
-	}
-#endif
 
   //
   // ensure payload is paged in

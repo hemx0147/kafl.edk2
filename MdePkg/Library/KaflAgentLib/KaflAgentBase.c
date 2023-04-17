@@ -8,7 +8,6 @@
 #include <Library/BaseLib.h>          // AsciiStrnCmp
 
 
-#ifdef KAFL_ASSUME_ALLOC
 STATIC agent_state_t g_agent_state = {
   .id_string = AGENT_STATE_ID,
   .agent_initialized = FALSE,
@@ -23,23 +22,6 @@ STATIC agent_state_t g_agent_state = {
   .ve_mis = 0,
   .agent_state_address = (UINT8*)KAFL_AGENT_STATE_STRUCT_ADDR
 };
-#else
-UINT8 g_payload_buffer[PAYLOAD_MAX_SIZE / 8] __attribute__((aligned(EFI_PAGE_SIZE)));
-STATIC agent_state_t g_agent_state = {
-  .id_string = AGENT_STATE_ID,
-  .agent_initialized = FALSE,
-  .fuzz_enabled = FALSE,
-  .agent_config = { 0 },
-  .host_config = { 0 },
-  .payload_buffer_size = PAYLOAD_MAX_SIZE / 8,
-  .payload_buffer = g_payload_buffer, // this might not work (not constant?)
-  .ve_buf = NULL,
-  .ve_num = 0,
-  .ve_pos = 0,
-  .ve_mis = 0,
-  .agent_state_address = (UINT8*)KAFL_AGENT_STATE_STRUCT_ADDR
-};
-#endif
 
 
 VOID

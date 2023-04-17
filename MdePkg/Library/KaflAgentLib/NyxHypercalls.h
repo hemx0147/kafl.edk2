@@ -60,7 +60,6 @@
 #define HYPERCALL_KAFL_NESTED_HPRINTF		(4 | HYPERTRASH_HYPERCALL_MASK)gre
 
 #define HPRINTF_MAX_SIZE					0x1000					/* up to 4KB hprintf strings */
-#define PAYLOAD_MAX_SIZE                    (128*1024)
 
 #define KAFL_MODE_64	0
 #define KAFL_MODE_32	1

@@ -17,13 +17,26 @@
 // #define CONFIG_KAFL_FUZZ_BLK_DEV_INIT
 #define CONFIG_KAFL_FUZZ_BLK_DEV_MEDIA_SMALL
 // #define CONFIG_KAFL_FUZZ_BLK_DEV_MEDIA_LARGE
+// #define CONFIG_KAFL_FUZZ_TDHOB
 /** KAFL HARNESS CONFIGURATION END **/
+
+// assume that we can use memory allocation functions only for targets that run later in boot process
+// trying to use allocation functions in TdHob harness (i.e. in TdxStartup.c) results in triggered assertion
+#ifndef CONFIG_KAFL_FUZZ_TDHOB
+# define KAFL_ASSUME_ALLOC
+# define KAFL_AGENT_PAYLOAD_MAX_SIZE 0
+#else
+// allocate only 16 pages for buffer (default value of 32 pages will throw errors)
+# define KAFL_AGENT_PAYLOAD_MAX_SIZE (16 * EFI_PAGE_SIZE)
+#endif
 
 //! keep consistent with sizeof(agent_state_t)
 #define KAFL_AGENT_STATE_STRUCT_SIZE 128
-//! keep consistent with real address of agent state struct in SecMain
-#define KAFL_AGENT_STATE_STRUCT_ADDR 0xFFFDEFF4
+//! keep consistent with real address of agent state struct and payload buffer in SecMain.c
+#define KAFL_AGENT_PAYLOAD_BUF_ADDR 0x80F000
+#define KAFL_AGENT_STATE_STRUCT_ADDR 0xFFFDF4B4
 STATIC UINT8 *gKaflAgentStateStructAddr __attribute__((used)) = (UINT8*) KAFL_AGENT_STATE_STRUCT_ADDR;
+STATIC UINT8 *gKaflAgentPayloadBufAddr __attribute__((used)) = (UINT8*) KAFL_AGENT_PAYLOAD_BUF_ADDR;
 
 enum kafl_event {
   KAFL_ENABLE,
@@ -51,6 +64,7 @@ enum tdx_fuzz_loc {
   TDX_FUZZ_BLK_DEV_INIT,
   TDX_FUZZ_VIRTIO_PCI_IO,
   TDX_FUZZ_BLK_DEV_MEDIA,
+  TDX_FUZZ_TDHOB,
   TDX_FUZZ_MAX
 };
 
