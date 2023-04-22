@@ -275,10 +275,6 @@ kafl_agent_init (
   debug_print("kAFL: allocate payload buffer dynamically\n");
   payload_buffer_size = host_config.payload_buffer_size;
   payload_buffer = (UINT8*)AllocateAlignedPages(EFI_SIZE_TO_PAGES(payload_buffer_size), EFI_PAGE_SIZE);
-#else
-  kafl_hprintf("kAFL: allocate payload buffer statically\n");
-  payload_buffer_size = KAFL_AGENT_PAYLOAD_MAX_SIZE;
-  payload_buffer = (UINT8*)KAFL_AGENT_PAYLOAD_BUF_ADDR;
 #endif
 
 	if (!payload_buffer) {
@@ -346,14 +342,17 @@ kafl_agent_init (
   //
   debug_print("kAFL %a: initialize agent state\n", __FUNCTION__);
   agent_state->agent_initialized = TRUE;
-  agent_state->payload_buffer = payload_buffer;
-  agent_state->payload_buffer_size = payload_buffer_size;
   agent_state->host_config = host_config;
   agent_state->agent_config = agent_config;
   agent_state->ve_buf = ve_buf;
   agent_state->ve_num = ve_num;
   agent_state->ve_pos = ve_pos;
   agent_state->ve_mis = ve_mis;
+#ifdef KAFL_ASSUME_ALLOC
+  // dynamically allocated buffer may have different address & size
+  agent_state->payload_buffer = payload_buffer;
+  agent_state->payload_buffer_size = payload_buffer_size;
+#endif
 
   //
   // start coverage tracing

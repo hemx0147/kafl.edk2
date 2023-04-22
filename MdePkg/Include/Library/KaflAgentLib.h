@@ -26,6 +26,8 @@
 #else
 // allocate only 16 pages for buffer (default value of 32 pages will throw errors)
 # define KAFL_AGENT_PAYLOAD_MAX_SIZE (16 * EFI_PAGE_SIZE)
+// size of the fuzzing payload to be injected as TdHob (730 is same size as MAGIC_TDHOB)
+# define KAFL_AGENT_TDHOB_FUZZ_SIZE 730
 #endif
 
 #define KAFL_DEBUG_PRINT_ACTIVE
