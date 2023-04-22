@@ -28,6 +28,8 @@
 # define KAFL_AGENT_PAYLOAD_MAX_SIZE (16 * EFI_PAGE_SIZE)
 #endif
 
+#define KAFL_DEBUG_PRINT_ACTIVE
+
 //! keep consistent with sizeof(agent_state_t)
 #define KAFL_AGENT_STATE_STRUCT_SIZE 128
 //! keep consistent with real address of agent state struct and payload buffer in SecMain.c

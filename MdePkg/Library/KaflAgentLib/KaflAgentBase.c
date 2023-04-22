@@ -30,7 +30,7 @@ kafl_show_state (
   VOID
   )
 {
-  kafl_hprintf("kAFL %a\n", __FUNCTION__);
+  debug_print("kAFL %a\n", __FUNCTION__);
   update_local_state();
   internal_show_state(&g_agent_state);
 }
@@ -47,11 +47,11 @@ kafl_fuzz_buffer (
 {
   UINTN RequestedBytes = 0;
 
-  kafl_hprintf("kAFL %a\n", __FUNCTION__);
+  debug_print("kAFL %a\n", __FUNCTION__);
 
   update_local_state();
 
-  kafl_hprintf("kAFL old state:");
+  debug_print("kAFL old state:");
   internal_show_state(&g_agent_state);
 
   RequestedBytes = internal_fuzz_buffer(fuzz_buf, orig_buf, addr, num_bytes, type, &g_agent_state);
@@ -66,7 +66,7 @@ kafl_fuzz_event (
   IN  enum kafl_event  e
   )
 {
-  kafl_hprintf("kAFL %a\n", __FUNCTION__);
+  debug_print("kAFL %a\n", __FUNCTION__);
 
   update_local_state();
   internal_show_state(&g_agent_state);
@@ -117,7 +117,7 @@ update_global_state (
     kafl_habort("global & local agent state are not equal after copy!\n", &g_agent_state);
   }
 
-  kafl_hprintf("kAFL new state:");
+  debug_print("kAFL new state:");
   internal_show_state(&g_agent_state);
 }
 

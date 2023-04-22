@@ -101,4 +101,14 @@ update_global_state (
   VOID
 );
 
+/**
+  Separate print function for debug prints.
+  This way we can disable all prints in kAFL agent, without disabling all debug prints for TDVF.
+*/
+VOID
+EFIAPI
+debug_print (
+  IN  CONST CHAR8   *Format,
+  ...
+);
 #endif
