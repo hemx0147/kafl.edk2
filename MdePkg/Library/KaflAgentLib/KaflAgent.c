@@ -75,7 +75,7 @@ kafl_habort (
     if (agent_state->payload_buffer && agent_state->payload_buffer_size > 0)
     {
       // free allocated payload buf only if agent state passed & initialized
-      kafl_hprintf("kAFL: free payload buffer at 0x%p, size %d\n", agent_state->payload_buffer, agent_state->payload_buffer_size);
+      debug_print("kAFL: free payload buffer at 0x%p, size %d\n", agent_state->payload_buffer, agent_state->payload_buffer_size);
       FreeAlignedPages(agent_state->payload_buffer, EFI_SIZE_TO_PAGES(agent_state->payload_buffer_size));
     }
   }
@@ -91,17 +91,17 @@ kafl_dump_buffer (
 {
   UINTN Pos;
 
-  kafl_hprintf("DumpBuffer 0x%p (%d (0x%x) bytes): [", Buf, BufSize, BufSize);
+  debug_print("DumpBuffer 0x%p (%d (0x%x) bytes): [", Buf, BufSize, BufSize);
 
   for (Pos = 0; Pos < BufSize; Pos++)
   {
     if (Pos != 0)
     {
-      kafl_hprintf(" ");
+      debug_print(" ");
     }
-    kafl_hprintf("%02x", Buf[Pos]);
+    debug_print("%02x", Buf[Pos]);
   }
-  kafl_hprintf("]\n");
+  debug_print("]\n");
 }
 
 STATIC
@@ -153,6 +153,23 @@ kafl_hprintf (
 
 VOID
 EFIAPI
+debug_print (
+  IN  CONST CHAR8   *Format,
+  ...
+  )
+{
+  // only print if debug printing is active
+#ifdef KAFL_DEBUG_PRINT_ACTIVE
+  VA_LIST   Marker;
+
+  VA_START (Marker, Format);
+  hprintf_marker (Format, Marker, NULL);
+  VA_END (Marker);
+#endif
+}
+
+VOID
+EFIAPI
 kafl_agent_done (
   IN  agent_state_t   *agent_state
   )
@@ -170,7 +187,7 @@ kafl_agent_done (
   // Stop tracing and restore the snapshot for next round
   // Non-zero argument triggers stream_expand mutation in kAFL
   //
-  kafl_hprintf("kAFL %a: Exiting kAFL loop\n", __FUNCTION__);
+  debug_print("kAFL %a: Exiting kAFL loop\n", __FUNCTION__);
   ReleaseNum = agent_state->ve_mis * sizeof((agent_state->ve_buf)[0]);
   update_global_state();
   kAFL_hypercall(HYPERCALL_KAFL_RELEASE, ReleaseNum);
@@ -184,19 +201,19 @@ internal_show_state (
 {
   UINTN as_size = sizeof(*agent_state);
 
-  kafl_hprintf("kAFL local agent state at 0x%p, size %d (0x%x):\n", agent_state, as_size, as_size);
-  kafl_hprintf("  id_string: %a\n", agent_state->id_string);
-  kafl_hprintf("  agent_initialized: %d\n", agent_state->agent_initialized);
-  kafl_hprintf("  fuzz_enabled: %d\n", agent_state->fuzz_enabled);
-  kafl_hprintf("  agent_config: 0x%p\n", agent_state->agent_config);
-  kafl_hprintf("  host_config: 0x%p\n", agent_state->host_config);
-  kafl_hprintf("  payload_buffer_size: %d\n", agent_state->payload_buffer_size);
-  kafl_hprintf("  payload_buffer: 0x%p\n", agent_state->payload_buffer);
-  kafl_hprintf("  ve_buf: 0x%p\n", agent_state->ve_buf);
-  kafl_hprintf("  ve_num: %d\n", agent_state->ve_num);
-  kafl_hprintf("  ve_pos: %d\n", agent_state->ve_pos);
-  kafl_hprintf("  ve_mis: %d\n", agent_state->ve_mis);
-  kafl_hprintf("  agent_state_address: 0x%p\n", agent_state->agent_state_address);
+  debug_print("kAFL local agent state at 0x%p, size %d (0x%x):\n", agent_state, as_size, as_size);
+  debug_print("  id_string: %a\n", agent_state->id_string);
+  debug_print("  agent_initialized: %d\n", agent_state->agent_initialized);
+  debug_print("  fuzz_enabled: %d\n", agent_state->fuzz_enabled);
+  debug_print("  agent_config: 0x%p\n", agent_state->agent_config);
+  debug_print("  host_config: 0x%p\n", agent_state->host_config);
+  debug_print("  payload_buffer_size: %d\n", agent_state->payload_buffer_size);
+  debug_print("  payload_buffer: 0x%p\n", agent_state->payload_buffer);
+  debug_print("  ve_buf: 0x%p\n", agent_state->ve_buf);
+  debug_print("  ve_num: %d\n", agent_state->ve_num);
+  debug_print("  ve_pos: %d\n", agent_state->ve_pos);
+  debug_print("  ve_mis: %d\n", agent_state->ve_mis);
+  debug_print("  agent_state_address: 0x%p\n", agent_state->agent_state_address);
 }
 
 // TODO: create fns for setting variable init values, set-/copy-/allocate memory
@@ -223,12 +240,12 @@ kafl_agent_init (
     kafl_habort("Warning: Agent was already initialized!\n", agent_state);
   }
 
-  kafl_hprintf("[*] Initialize kAFL Agent\n");
+  debug_print("[*] Initialize kAFL Agent\n");
 
   //
   // initial fuzzer handshake
   //
-  kafl_hprintf("kAFL: initial fuzzer handshake\n");
+  debug_print("kAFL: initial fuzzer handshake\n");
   kAFL_hypercall(HYPERCALL_KAFL_ACQUIRE, 0);
   kAFL_hypercall(HYPERCALL_KAFL_RELEASE, 0);
 
@@ -238,16 +255,16 @@ kafl_agent_init (
   // acquire host configuration
   //
   kAFL_hypercall(HYPERCALL_KAFL_GET_HOST_CONFIG, (UINTN)&host_config);
-  kafl_hprintf("[host_config] bitmap sizes = <0x%x,0x%x>\n", host_config.bitmap_size, host_config.ijon_bitmap_size);
-  kafl_hprintf("[host_config] payload size = %dKB\n", host_config.payload_buffer_size/1024);
-  kafl_hprintf("[host_config] worker id = %02u\n", host_config.worker_id);
+  debug_print("[host_config] bitmap sizes = <0x%x,0x%x>\n", host_config.bitmap_size, host_config.ijon_bitmap_size);
+  debug_print("[host_config] payload size = %dKB\n", host_config.payload_buffer_size/1024);
+  debug_print("[host_config] worker id = %02u\n", host_config.worker_id);
 
   //
   // check if host config is valid
   //
   if (host_config.host_magic != NYX_HOST_MAGIC ||
       host_config.host_version != NYX_HOST_VERSION) {
-    kafl_hprintf("host_config magic/version mismatch!\n");
+    debug_print("host_config magic/version mismatch!\n");
     kafl_habort("GET_HOST_CNOFIG magic/version mismatch!\n", agent_state);
   }
 
@@ -255,7 +272,7 @@ kafl_agent_init (
   // allocate page-aligned payload buffer
   //
 #ifdef KAFL_ASSUME_ALLOC
-  kafl_hprintf("kAFL: allocate payload buffer dynamically\n");
+  debug_print("kAFL: allocate payload buffer dynamically\n");
   payload_buffer_size = host_config.payload_buffer_size;
   payload_buffer = (UINT8*)AllocateAlignedPages(EFI_SIZE_TO_PAGES(payload_buffer_size), EFI_PAGE_SIZE);
 #else
@@ -273,7 +290,7 @@ kafl_agent_init (
 	// 	kafl_habort("kAFL: Insufficient payload buffer size!\n", agent_state);
 	// }
 
-  kafl_hprintf("kAFL %a: allocated %d bytes for payload at 0x%p\n", __FUNCTION__, payload_buffer_size, payload_buffer);
+  debug_print("kAFL %a: allocated %d bytes for payload at 0x%p\n", __FUNCTION__, payload_buffer_size, payload_buffer);
 
   //
   // ensure payload is paged in
@@ -283,13 +300,13 @@ kafl_agent_init (
   //
   // submit payload buffer address to HV
   //
-  kafl_hprintf("kAFL %a: Submitting payload buffer address to hypervisor (0x%lx)\n", __FUNCTION__, (UINTN)payload_buffer);
+  debug_print("kAFL %a: Submitting payload buffer address to hypervisor (0x%lx)\n", __FUNCTION__, (UINTN)payload_buffer);
   kAFL_hypercall(HYPERCALL_KAFL_GET_PAYLOAD, (UINTN)payload_buffer);
 
   //
   // submit agent config
   //
-  kafl_hprintf("kAFL %a: submit agent config\n", __FUNCTION__);
+  debug_print("kAFL %a: submit agent config\n", __FUNCTION__);
   //? add other values from kafl.linux kafl-agent.c as well?
   agent_config.agent_magic = NYX_AGENT_MAGIC;
   agent_config.agent_version = NYX_AGENT_VERSION;
@@ -304,7 +321,7 @@ kafl_agent_init (
   //
   // fetch fuzz input for later #VE injection
   //
-  kafl_hprintf("kAFL %a: Starting kAFL loop...\n", __FUNCTION__);
+  debug_print("kAFL %a: Starting kAFL loop...\n", __FUNCTION__);
   kAFL_hypercall(HYPERCALL_KAFL_NEXT_PAYLOAD, 0);
 
   payload = (kAFL_payload *)payload_buffer;
@@ -312,14 +329,14 @@ kafl_agent_init (
   ve_num = payload->size;
   ve_pos = 0;
   ve_mis = 0;
-  kafl_hprintf("kAFL %a: set payload to 0x%p, ve_buf: 0x%p, ve_num: %d\n", __FUNCTION__, payload, ve_buf, ve_num);
+  debug_print("kAFL %a: set payload to 0x%p, ve_buf: 0x%p, ve_num: %d\n", __FUNCTION__, payload, ve_buf, ve_num);
 
   if (payload->flags.raw_data != 0)
   {
-    kafl_hprintf("Runtime payload->flags=0x%04x\n", payload->flags.raw_data);
-    kafl_hprintf("\t dump_observed = %u\n",         payload->flags.dump_observed);
-    kafl_hprintf("\t dump_stats = %u\n",            payload->flags.dump_stats);
-    kafl_hprintf("\t dump_callers = %u\n",          payload->flags.dump_callers);
+    debug_print("Runtime payload->flags=0x%04x\n", payload->flags.raw_data);
+    debug_print("\t dump_observed = %u\n",         payload->flags.dump_observed);
+    debug_print("\t dump_stats = %u\n",            payload->flags.dump_stats);
+    debug_print("\t dump_callers = %u\n",          payload->flags.dump_callers);
   }
 
   // TODO: add kafl stats clear
@@ -327,7 +344,7 @@ kafl_agent_init (
   //
   // initialize agent state
   //
-  kafl_hprintf("kAFL %a: initialize agent state\n", __FUNCTION__);
+  debug_print("kAFL %a: initialize agent state\n", __FUNCTION__);
   agent_state->agent_initialized = TRUE;
   agent_state->payload_buffer = payload_buffer;
   agent_state->payload_buffer_size = payload_buffer_size;
@@ -341,7 +358,7 @@ kafl_agent_init (
   //
   // start coverage tracing
   //
-  kafl_hprintf("kAFL %a: start coverage tracking\n", __FUNCTION__);
+  debug_print("kAFL %a: start coverage tracking\n", __FUNCTION__);
   kAFL_hypercall(HYPERCALL_KAFL_ACQUIRE, 0);
 }
 
@@ -359,9 +376,9 @@ _internal_fuzz_buffer (
   UINT32 ve_num = agent_state->ve_num;
   UINT32 ve_mis = agent_state->ve_mis;
 
-  // TODO: fuzzer kickstart value must be at least num_bytes larger, otherwise fuzzer won't work
-  kafl_hprintf("kAFL %a: Fuzz buf 0x%p Size %d (0x%x)\n", __FUNCTION__, buf, num_bytes, num_bytes);
-  kafl_hprintf("kAFL %a: ve_pos: %d, num_bytes: %d, ve_pos + num_bytes: %d, ve_num: %d\n", __FUNCTION__, ve_pos, num_bytes, ve_pos + num_bytes, ve_num);
+  // TODO: fuzzer kickstart value must be at least num_bytes large, otherwise fuzzer won't work
+  debug_print("kAFL %a: Fuzz buf 0x%p Size %d (0x%x)\n", __FUNCTION__, buf, num_bytes, num_bytes);
+  debug_print("kAFL %a: ve_pos: %d, num_bytes: %d, ve_pos + num_bytes: %d, ve_num: %d\n", __FUNCTION__, ve_pos, num_bytes, ve_pos + num_bytes, ve_num);
   if (ve_pos + num_bytes > ve_num)
   {
     //
@@ -369,17 +386,17 @@ _internal_fuzz_buffer (
     //
     ve_mis += num_bytes;
     agent_state->ve_mis = ve_mis;
-    kafl_hprintf("kAFL %a: insufficient FuzBuf. ve_mis: %d\n", __FUNCTION__, ve_mis);
-    kafl_hprintf("kAFL %a: end here without return\n", __FUNCTION__);
+    debug_print("kAFL %a: insufficient FuzBuf. ve_mis: %d\n", __FUNCTION__, ve_mis);
+    debug_print("kAFL %a: end here without return\n", __FUNCTION__);
     kafl_agent_done(agent_state);
     /* no return */
   }
 
-  kafl_hprintf("kAFL %a: CopyMem ve_pos + ve_buf: 0x%p, num_bytes: %d\n", __FUNCTION__, ve_pos + ve_buf, num_bytes);
+  debug_print("kAFL %a: CopyMem ve_pos + ve_buf: 0x%p, num_bytes: %d\n", __FUNCTION__, ve_pos + ve_buf, num_bytes);
   CopyMem(buf, ve_buf + ve_pos, num_bytes);
   ve_pos += num_bytes;
   agent_state->ve_pos = ve_pos;
-  kafl_hprintf("kAFL %a: new ve_pos: %d\n", __FUNCTION__, ve_pos);
+  debug_print("kAFL %a: new ve_pos: %d\n", __FUNCTION__, ve_pos);
 
   return num_bytes;
 }
@@ -403,24 +420,24 @@ internal_fuzz_buffer (
 
   if (!agent_state->fuzz_enabled)
   {
-    kafl_hprintf("kAFL: agent fuzzing not yet enabled. Not injecting any payload.\n");
+    debug_print("kAFL: agent fuzzing not yet enabled. Not injecting any payload.\n");
     return 0;
   }
 
   if (!agent_state->agent_initialized)
   {
-    kafl_hprintf("kAFL: agent not yet initialized. Initializing...\n");
+    debug_print("kAFL: agent not yet initialized. Initializing...\n");
     kafl_agent_init(agent_state);
   }
 
   // TODO: add agent flags dump callers
 
-  kafl_hprintf("kAFL %a: Buffer 0x%p, Size %d (0x%x) before injection:\n", __FUNCTION__, fuzz_buf, num_bytes, num_bytes);
+  debug_print("kAFL %a: Buffer 0x%p, Size %d (0x%x) before injection:\n", __FUNCTION__, fuzz_buf, num_bytes, num_bytes);
   kafl_dump_buffer(fuzz_buf, num_bytes < 32 ? num_bytes : 32);
   num_fuzzed = _internal_fuzz_buffer(fuzz_buf, num_bytes, agent_state);
-  kafl_hprintf("kAFL %a: Buffer 0x%p, Size %d (0x%x) after injection:\n", __FUNCTION__, fuzz_buf, num_bytes, num_bytes);
+  debug_print("kAFL %a: Buffer 0x%p, Size %d (0x%x) after injection:\n", __FUNCTION__, fuzz_buf, num_bytes, num_bytes);
   kafl_dump_buffer(fuzz_buf, num_bytes < 32 ? num_bytes : 32);
-  kafl_hprintf("kAFL %a: num_fuzzed: %d (0x%x)\n", __FUNCTION__, num_fuzzed, num_fuzzed);
+  debug_print("kAFL %a: num_fuzzed: %d (0x%x)\n", __FUNCTION__, num_fuzzed, num_fuzzed);
 
   return num_fuzzed;
 }
@@ -438,7 +455,7 @@ internal_fuzz_event (
       pr_warn("[*] Agent start!\n");
       kafl_agent_init(agent_state);
       agent_state->fuzz_enabled = TRUE;
-      kafl_hprintf("kAFL: init done.\n");
+      debug_print("kAFL: init done.\n");
       return;
     case KAFL_ENABLE:
       pr_warn("[*] Agent enable!\n");

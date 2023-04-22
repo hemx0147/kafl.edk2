@@ -8,7 +8,12 @@
 #include <Library/BaseLib.h>          // AsciiStrnCmp
 
 
-STATIC agent_state_t g_agent_state = {
+STATIC UINTN gKaflAgentPayloadMaxBufSize __attribute__((used)) = 0;
+STATIC UINT8 *gKaflAgentPayloadBufAddr __attribute__((used)) = NULL;
+STATIC UINT8 *gKaflAgentStateStructAddr __attribute__((used)) = NULL;
+
+// local agent state
+STATIC agent_state_t agent_state = {
   .id_string = AGENT_STATE_ID,
   .agent_initialized = FALSE,
   .fuzz_enabled = FALSE,
@@ -20,7 +25,7 @@ STATIC agent_state_t g_agent_state = {
   .ve_num = 0,
   .ve_pos = 0,
   .ve_mis = 0,
-  .agent_state_address = (UINT8*)KAFL_AGENT_STATE_STRUCT_ADDR
+  .agent_state_address = NULL
 };
 
 
@@ -30,9 +35,9 @@ kafl_show_state (
   VOID
   )
 {
-  kafl_hprintf("kAFL %a\n", __FUNCTION__);
+  debug_print("kAFL %a\n", __FUNCTION__);
   update_local_state();
-  internal_show_state(&g_agent_state);
+  internal_show_state(&agent_state);
 }
 
 UINTN
@@ -47,14 +52,14 @@ kafl_fuzz_buffer (
 {
   UINTN RequestedBytes = 0;
 
-  kafl_hprintf("kAFL %a\n", __FUNCTION__);
+  debug_print("kAFL %a\n", __FUNCTION__);
 
   update_local_state();
 
-  kafl_hprintf("kAFL old state:");
-  internal_show_state(&g_agent_state);
+  debug_print("kAFL old state:");
+  internal_show_state(&agent_state);
 
-  RequestedBytes = internal_fuzz_buffer(fuzz_buf, orig_buf, addr, num_bytes, type, &g_agent_state);
+  RequestedBytes = internal_fuzz_buffer(fuzz_buf, orig_buf, addr, num_bytes, type, &agent_state);
   update_global_state();
 
   return RequestedBytes;
@@ -66,11 +71,11 @@ kafl_fuzz_event (
   IN  enum kafl_event  e
   )
 {
-  kafl_hprintf("kAFL %a\n", __FUNCTION__);
+  debug_print("kAFL %a\n", __FUNCTION__);
 
   update_local_state();
-  internal_show_state(&g_agent_state);
-  internal_fuzz_event(e, &g_agent_state);
+  internal_show_state(&agent_state);
+  internal_fuzz_event(e, &agent_state);
   update_global_state();
 }
 
@@ -107,18 +112,24 @@ update_global_state (
   VOID
   )
 {
-  agent_state_t *global_agent_state = (agent_state_t*)gKaflAgentStateStructAddr;
-  *global_agent_state = g_agent_state;
+  debug_print("update global state\n");
 
-  // verify that data was written correctly
-  agent_state_t gAS = *((agent_state_t*)gKaflAgentStateStructAddr);
-  if (!state_is_equal(&gAS, &g_agent_state))
+  if (!gKaflAgentStateStructAddr)
   {
-    kafl_habort("global & local agent state are not equal after copy!\n", &g_agent_state);
+    kafl_habort("Invalid agent state struct address.\n", &agent_state);
   }
 
-  kafl_hprintf("kAFL new state:");
-  internal_show_state(&g_agent_state);
+  CopyMem(gKaflAgentStateStructAddr, &agent_state, KAFL_AGENT_STATE_STRUCT_SIZE);
+
+  // verify that data was written correctly
+  agent_state_t *gAS = (agent_state_t*)gKaflAgentStateStructAddr;
+  if (!state_is_equal(gAS, &agent_state))
+  {
+    kafl_habort("global & local agent state are not equal after copy!\n", &agent_state);
+  }
+
+  debug_print("kAFL new state:");
+  internal_show_state(&agent_state);
 }
 
 VOID
@@ -127,19 +138,63 @@ update_local_state (
   VOID
   )
 {
-  agent_state_t global_agent_state = *((agent_state_t*)gKaflAgentStateStructAddr);
+  debug_print("update local state\n");
+
+  debug_print("kAFL: global state struct addr at 0x%p\n", gKaflAgentStateStructAddr);
+  if (!gKaflAgentStateStructAddr)
+  {
+    kafl_habort("Invalid agent state struct address.\n", &agent_state);
+  }
+
+  debug_print("kAFL: global state struct addr second time at 0x%p\n", gKaflAgentStateStructAddr);
+  agent_state_t *gAS = (agent_state_t*)gKaflAgentStateStructAddr;
 
   // check if global agent state contains any data except 0
-  if ((global_agent_state.id_string == NULL) || (global_agent_state.agent_state_address == 0))
+  if ((gAS->id_string == NULL) || (gAS->agent_state_address == 0))
   {
     return;
   }
 
   // check if agent state struct markers are valid
-  if (AsciiStrnCmp(global_agent_state.id_string, AGENT_STATE_ID, AGENT_STATE_ID_SIZE) == 0 &&
-      global_agent_state.agent_state_address == gKaflAgentStateStructAddr)
+  if (AsciiStrnCmp(gAS->id_string, AGENT_STATE_ID, AGENT_STATE_ID_SIZE) == 0 &&
+      gAS->agent_state_address == gKaflAgentStateStructAddr)
   {
     // global agent state was already initialized -> prefer it over file-local state struct
-    g_agent_state = global_agent_state;
+    CopyMem(&agent_state, gAS, KAFL_AGENT_STATE_STRUCT_SIZE);
   }
+}
+
+VOID
+EFIAPI
+kafl_submit_agent_state_addr (
+  IN  UINT8   *StateAddr
+)
+{
+  if (!StateAddr)
+  {
+    kafl_habort("agent state buf is NULL\n", &agent_state);
+  }
+
+  gKaflAgentStateStructAddr = StateAddr;
+  agent_state.agent_state_address = StateAddr;
+}
+
+VOID
+EFIAPI
+kafl_submit_payload_buf_addr (
+  IN  UINT8   *BufAddr,
+  IN  UINTN   MaxBufSize
+)
+{
+  if (!BufAddr) {
+    kafl_habort("agent payload buffer space address is NULL\n", &agent_state);
+  }
+  if (MaxBufSize <= 0 || MaxBufSize > KAFL_AGENT_PAYLOAD_MAX_SIZE) {
+    kafl_habort("invalid buffer size\n", &agent_state);
+  }
+
+  gKaflAgentPayloadBufAddr = BufAddr;
+  gKaflAgentPayloadMaxBufSize = MaxBufSize;
+  agent_state.payload_buffer = BufAddr;
+  agent_state.payload_buffer_size = MaxBufSize;
 }
