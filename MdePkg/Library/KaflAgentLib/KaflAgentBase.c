@@ -112,12 +112,18 @@ update_global_state (
   VOID
   )
 {
-  agent_state_t *global_agent_state = (agent_state_t*)gKaflAgentStateStructAddr;
-  *global_agent_state = g_agent_state;
+  debug_print("update global state\n");
+
+  if (!gKaflAgentStateStructAddr)
+  {
+    kafl_habort("Invalid agent state struct address.\n", &g_agent_state);
+  }
+
+  CopyMem(gKaflAgentStateStructAddr, &g_agent_state, KAFL_AGENT_STATE_STRUCT_SIZE);
 
   // verify that data was written correctly
-  agent_state_t gAS = *((agent_state_t*)gKaflAgentStateStructAddr);
-  if (!state_is_equal(&gAS, &g_agent_state))
+  agent_state_t *gAS = (agent_state_t*)gKaflAgentStateStructAddr;
+  if (!state_is_equal(gAS, &g_agent_state))
   {
     kafl_habort("global & local agent state are not equal after copy!\n", &g_agent_state);
   }
@@ -132,20 +138,29 @@ update_local_state (
   VOID
   )
 {
-  agent_state_t global_agent_state = *((agent_state_t*)gKaflAgentStateStructAddr);
+  debug_print("update local state\n");
+
+  debug_print("kAFL: global state struct addr at 0x%p\n", gKaflAgentStateStructAddr);
+  if (!gKaflAgentStateStructAddr)
+  {
+    kafl_habort("Invalid agent state struct address.\n", &g_agent_state);
+  }
+
+  debug_print("kAFL: global state struct addr second time at 0x%p\n", gKaflAgentStateStructAddr);
+  agent_state_t *gAS = (agent_state_t*)gKaflAgentStateStructAddr;
 
   // check if global agent state contains any data except 0
-  if ((global_agent_state.id_string == NULL) || (global_agent_state.agent_state_address == 0))
+  if ((gAS->id_string == NULL) || (gAS->agent_state_address == 0))
   {
     return;
   }
 
   // check if agent state struct markers are valid
-  if (AsciiStrnCmp(global_agent_state.id_string, AGENT_STATE_ID, AGENT_STATE_ID_SIZE) == 0 &&
-      global_agent_state.agent_state_address == gKaflAgentStateStructAddr)
+  if (AsciiStrnCmp(gAS->id_string, AGENT_STATE_ID, AGENT_STATE_ID_SIZE) == 0 &&
+      gAS->agent_state_address == gKaflAgentStateStructAddr)
   {
     // global agent state was already initialized -> prefer it over file-local state struct
-    g_agent_state = global_agent_state;
+    CopyMem(&g_agent_state, gAS, KAFL_AGENT_STATE_STRUCT_SIZE);
   }
 }
 
