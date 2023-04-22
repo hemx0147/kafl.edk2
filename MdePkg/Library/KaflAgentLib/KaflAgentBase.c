@@ -8,6 +8,11 @@
 #include <Library/BaseLib.h>          // AsciiStrnCmp
 
 
+STATIC UINTN gKaflAgentPayloadMaxBufSize __attribute__((used)) = 0;
+STATIC UINT8 *gKaflAgentPayloadBufAddr __attribute__((used)) = NULL;
+STATIC UINT8 *gKaflAgentStateStructAddr __attribute__((used)) = NULL;
+
+// local agent state
 STATIC agent_state_t g_agent_state = {
   .id_string = AGENT_STATE_ID,
   .agent_initialized = FALSE,
@@ -20,7 +25,7 @@ STATIC agent_state_t g_agent_state = {
   .ve_num = 0,
   .ve_pos = 0,
   .ve_mis = 0,
-  .agent_state_address = (UINT8*)KAFL_AGENT_STATE_STRUCT_ADDR
+  .agent_state_address = NULL
 };
 
 
@@ -142,4 +147,39 @@ update_local_state (
     // global agent state was already initialized -> prefer it over file-local state struct
     g_agent_state = global_agent_state;
   }
+}
+
+VOID
+EFIAPI
+kafl_submit_agent_state_addr (
+  IN  UINT8   *StateAddr
+)
+{
+  if (!StateAddr)
+  {
+    kafl_habort("agent state buf is NULL\n", &g_agent_state);
+  }
+
+  gKaflAgentStateStructAddr = StateAddr;
+  g_agent_state.agent_state_address = StateAddr;
+}
+
+VOID
+EFIAPI
+kafl_submit_payload_buf_addr (
+  IN  UINT8   *BufAddr,
+  IN  UINTN   MaxBufSize
+)
+{
+  if (!BufAddr) {
+    kafl_habort("agent payload buffer space address is NULL\n", &g_agent_state);
+  }
+  if (MaxBufSize <= 0 || MaxBufSize > KAFL_AGENT_PAYLOAD_MAX_SIZE) {
+    kafl_habort("invalid buffer size\n", &g_agent_state);
+  }
+
+  gKaflAgentPayloadBufAddr = BufAddr;
+  gKaflAgentPayloadMaxBufSize = MaxBufSize;
+  g_agent_state.payload_buffer = BufAddr;
+  g_agent_state.payload_buffer_size = MaxBufSize;
 }
