@@ -15,6 +15,7 @@
 
 #define GET_GPAW_INIT_STATE(INFO)  ((UINT8) ((INFO) & 0x3f))
 
+#ifndef CONFIG_KAFL_FUZZ_TDHOB
 // 🧙‍♂️ Magic TdHobList 🧙‍♂️
 static UINT8 MAGIC_TDHOBLIST[] = {
   0x01, 0x00, 0x38, 0x00, 0x00, 0x00, 0x00, 0x00, 0x09, 0x00, 0x00, 0x00,
@@ -79,6 +80,7 @@ static UINT8 MAGIC_TDHOBLIST[] = {
   0x03, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
   0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0xff, 0xff
 };
+#endif
 
 /**
   Validates the configuration volume, measures it, and created a FV Hob
@@ -160,19 +162,19 @@ TdxStartup(
   Status = TdCall (TDCALL_TDINFO, 0, 0, 0, &TdReturnData);
   ASSERT (Status == EFI_SUCCESS);
 
+// disable unnecessary debug print for fuzzing
+#ifndef CONFIG_KAFL_FUZZ_TDHOB
   DEBUG ((EFI_D_INFO,
     "Tdx started with(Hob: 0x%x, Info: 0x%x, Cpus: %d)\n",
     (UINT32)(UINTN)VmmHobList,
     (UINT32)(UINTN)Info,
     TdReturnData.TdInfo.NumVcpus
   ));
+#endif
 
   ZeroMem (&PlatformInfoHob, sizeof (PlatformInfoHob));
 
-#ifdef CONFIG_KAFL_FUZZ_TDHOB
-  kafl_fuzz_event(KAFL_ENABLE);
-  kafl_fuzz_buffer(VmmHobList, VmmHobList, (UINTN*)VmmHobList, sizeof MAGIC_TDHOBLIST, TDX_FUZZ_TDHOB);
-#else
+#ifndef CONFIG_KAFL_FUZZ_TDHOB
   //
   // Hardcode TdHobList for SDV environment
   //
@@ -188,9 +190,6 @@ TdxStartup(
   // Validate HobList
   //
   if (ValidateHobList (VmmHobList) == FALSE) {
-#ifdef CONFIG_KAFL_FUZZ_TDHOB
-    kafl_hprintf("Exit on Error from ValidateHobList\n");
-#endif
     ASSERT (FALSE);
     CpuDeadLoop ();
   }
@@ -204,9 +203,6 @@ TdxStartup(
   //
   Status = ProcessHobList (VmmHobList);
   if (EFI_ERROR (Status)) {
-#ifdef CONFIG_KAFL_FUZZ_TDHOB
-    kafl_hprintf("Exit on Error from ProcessHobList\n");
-#endif
     ASSERT (FALSE);
     CpuDeadLoop();
   }
@@ -220,6 +216,11 @@ TdxStartup(
   // Tranfer the Hoblist to the final Hoblist for DXe
   //
   TransferHobList (VmmHobList);
+
+#ifdef CONFIG_KAFL_FUZZ_TDHOB
+  kafl_hprintf("Regular Exit\n");
+  kafl_fuzz_event(KAFL_DONE);
+#endif
 
   //
   // Create and event log entry so VMM Hoblist can be measured
