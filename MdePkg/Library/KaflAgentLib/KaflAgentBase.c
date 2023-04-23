@@ -110,7 +110,7 @@ update_global_state (
 
   if (!gKaflAgentStateStructAddr)
   {
-    kafl_habort("Invalid agent state struct address.\n", &agent_state);
+    kafl_habort("Invalid agent state struct address.\n");
   }
 
   //? maybe use copymem instead?
@@ -121,7 +121,7 @@ update_global_state (
   agent_state_t *gAS = (agent_state_t*)gKaflAgentStateStructAddr;
   if (!state_is_equal(gAS, &agent_state))
   {
-    kafl_habort("global & local agent state are not equal after copy!\n", &agent_state);
+    kafl_habort("global & local agent state are not equal after copy!\n");
   }
 
   debug_print("kAFL new state:");
@@ -139,7 +139,7 @@ update_local_state (
   debug_print("kAFL: global state struct addr at 0x%p\n", gKaflAgentStateStructAddr);
   if (!gKaflAgentStateStructAddr)
   {
-    kafl_habort("Invalid agent state struct address.\n", &agent_state);
+    kafl_habort("Invalid agent state struct address.\n");
   }
 
   debug_print("kAFL: global state struct addr second time at 0x%p\n", gKaflAgentStateStructAddr);
