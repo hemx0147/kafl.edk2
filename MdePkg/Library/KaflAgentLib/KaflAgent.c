@@ -76,7 +76,9 @@ kafl_habort (
     {
       // free allocated payload buf only if agent state passed & initialized
       debug_print("kAFL: free payload buffer at 0x%p, size %d\n", agent_state->payload_buffer, agent_state->payload_buffer_size);
+#ifdef KAFL_ASSUME_ALLOC
       FreeAlignedPages(agent_state->payload_buffer, EFI_SIZE_TO_PAGES(agent_state->payload_buffer_size));
+#endif
     }
   }
   kAFL_hypercall(HYPERCALL_KAFL_USER_ABORT, (UINTN)Msg);

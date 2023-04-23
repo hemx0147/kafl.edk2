@@ -8,9 +8,6 @@
 #include <Library/BaseLib.h>          // AsciiStrnCmp
 
 
-STATIC UINTN gKaflAgentPayloadMaxBufSize __attribute__((used)) = 0;
-STATIC UINT8 *gKaflAgentPayloadBufAddr __attribute__((used)) = NULL;
-STATIC UINT8 *gKaflAgentStateStructAddr __attribute__((used)) = NULL;
 
 // local agent state
 STATIC agent_state_t agent_state = {
@@ -19,13 +16,13 @@ STATIC agent_state_t agent_state = {
   .fuzz_enabled = FALSE,
   .agent_config = { 0 },
   .host_config = { 0 },
-  .payload_buffer_size = 0,
-  .payload_buffer = NULL,
+  .payload_buffer_size = KAFL_AGENT_PAYLOAD_MAX_SIZE,
+  .payload_buffer = (UINT8*) KAFL_AGENT_PAYLOAD_BUF_ADDR,
   .ve_buf = NULL,
   .ve_num = 0,
   .ve_pos = 0,
   .ve_mis = 0,
-  .agent_state_address = NULL
+  .agent_state_address = (UINT8*) KAFL_AGENT_STATE_STRUCT_ADDR
 };
 
 
@@ -100,10 +97,7 @@ state_is_equal (
   {
     return FALSE;
   }
-
-  // try memcmp for now. If this doesn't work, fall back to member comparison
   return 0 == CompareMem(ThisState, OtherState, KAFL_AGENT_STATE_STRUCT_SIZE);
-
 }
 
 VOID
@@ -119,7 +113,9 @@ update_global_state (
     kafl_habort("Invalid agent state struct address.\n", &agent_state);
   }
 
-  CopyMem(gKaflAgentStateStructAddr, &agent_state, KAFL_AGENT_STATE_STRUCT_SIZE);
+  //? maybe use copymem instead?
+  // CopyMem(gKaflAgentStateStructAddr, &agent_state, KAFL_AGENT_STATE_STRUCT_SIZE);
+  *(agent_state_t*)gKaflAgentStateStructAddr = agent_state;
 
   // verify that data was written correctly
   agent_state_t *gAS = (agent_state_t*)gKaflAgentStateStructAddr;
@@ -160,41 +156,8 @@ update_local_state (
       gAS->agent_state_address == gKaflAgentStateStructAddr)
   {
     // global agent state was already initialized -> prefer it over file-local state struct
-    CopyMem(&agent_state, gAS, KAFL_AGENT_STATE_STRUCT_SIZE);
+    //? maybe use copymem instead?
+    // CopyMem(&agent_state, gAS, KAFL_AGENT_STATE_STRUCT_SIZE);
+    agent_state = *gAS;
   }
-}
-
-VOID
-EFIAPI
-kafl_submit_agent_state_addr (
-  IN  UINT8   *StateAddr
-)
-{
-  if (!StateAddr)
-  {
-    kafl_habort("agent state buf is NULL\n", &agent_state);
-  }
-
-  gKaflAgentStateStructAddr = StateAddr;
-  agent_state.agent_state_address = StateAddr;
-}
-
-VOID
-EFIAPI
-kafl_submit_payload_buf_addr (
-  IN  UINT8   *BufAddr,
-  IN  UINTN   MaxBufSize
-)
-{
-  if (!BufAddr) {
-    kafl_habort("agent payload buffer space address is NULL\n", &agent_state);
-  }
-  if (MaxBufSize <= 0 || MaxBufSize > KAFL_AGENT_PAYLOAD_MAX_SIZE) {
-    kafl_habort("invalid buffer size\n", &agent_state);
-  }
-
-  gKaflAgentPayloadBufAddr = BufAddr;
-  gKaflAgentPayloadMaxBufSize = MaxBufSize;
-  agent_state.payload_buffer = BufAddr;
-  agent_state.payload_buffer_size = MaxBufSize;
 }
