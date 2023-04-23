@@ -24,18 +24,23 @@
 // trying to use allocation functions in TdHob harness (i.e. in TdxStartup.c) results in triggered assertion
 #ifndef CONFIG_KAFL_FUZZ_TDHOB
 # define KAFL_ASSUME_ALLOC
-# define KAFL_AGENT_PAYLOAD_MAX_SIZE 0
 #else
-// allocate only 16 pages for buffer (default value of 32 pages will throw errors)
-# define KAFL_AGENT_PAYLOAD_MAX_SIZE (16 * EFI_PAGE_SIZE)
 // size of the fuzzing payload to be injected as TdHob (730 is same size as MAGIC_TDHOB)
 # define KAFL_AGENT_TDHOB_FUZZ_SIZE 730
 #endif
 
-// #define KAFL_DEBUG_PRINT_ACTIVE
+#define KAFL_DEBUG_PRINT_ACTIVE
+// allocate only few pages for buffer (larger values (e.g. default value of 32) may cause errors)
+#define KAFL_AGENT_PAYLOAD_MAX_SIZE (16 * EFI_PAGE_SIZE)
+
 
 //! keep consistent with sizeof(agent_state_t)
 #define KAFL_AGENT_STATE_STRUCT_SIZE 128
+//! keep consistent with real addresses of agent state struct and payload buffer in SecMain.c
+#define KAFL_AGENT_PAYLOAD_BUF_ADDR 0x80F000
+#define KAFL_AGENT_STATE_STRUCT_ADDR 0x80ED50
+STATIC UINT8 *gKaflAgentPayloadBufAddr __attribute__((used)) = (UINT8*) KAFL_AGENT_PAYLOAD_BUF_ADDR;
+STATIC UINT8 *gKaflAgentStateStructAddr __attribute__((used)) = (UINT8*) KAFL_AGENT_STATE_STRUCT_ADDR;
 
 enum kafl_event {
   KAFL_ENABLE,
@@ -96,24 +101,5 @@ kafl_dump_buffer (
   IN  UINT8   *Buf,
   IN  UINTN   BufSize
 );
-
-VOID
-EFIAPI
-kafl_show_state (
-  VOID
-);
-
-VOID
-EFIAPI
-kafl_submit_agent_state_addr (
-  IN  UINT8   *StateAddr
-) __attribute__((used));
-
-VOID
-EFIAPI
-kafl_submit_payload_buf_addr (
-  IN  UINT8   *BufAddr,
-  IN  UINTN   MaxBufSize
-) __attribute__((used));
 
 #endif

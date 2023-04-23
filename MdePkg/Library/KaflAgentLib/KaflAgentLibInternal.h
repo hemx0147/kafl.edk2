@@ -45,8 +45,7 @@ kafl_raise_kasan (
 VOID
 EFIAPI
 kafl_habort (
-  IN  CHAR8           *Msg,
-  IN  agent_state_t   *agent_state
+  IN  CHAR8   *Msg
 );
 
 VOID
