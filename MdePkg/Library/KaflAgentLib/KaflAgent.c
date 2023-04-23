@@ -109,7 +109,7 @@ hprintf_marker (
   //
   if (Format == NULL)
   {
-    kafl_habort("hprintf format is NULL\n");
+    kafl_habort("hprintf format string is NULL\n");
   }
 
   //
@@ -183,29 +183,6 @@ kafl_agent_done (
   kAFL_hypercall(HYPERCALL_KAFL_RELEASE, ReleaseNum);
 }
 
-VOID
-EFIAPI
-internal_show_state (
-  agent_state_t *agent_state
-  )
-{
-  UINTN as_size = sizeof(*agent_state);
-
-  debug_print("kAFL local agent state at 0x%p, size %d (0x%x):\n", agent_state, as_size, as_size);
-  debug_print("  id_string: %a\n", agent_state->id_string);
-  debug_print("  agent_initialized: %d\n", agent_state->agent_initialized);
-  debug_print("  fuzz_enabled: %d\n", agent_state->fuzz_enabled);
-  debug_print("  agent_config: 0x%p\n", agent_state->agent_config);
-  debug_print("  host_config: 0x%p\n", agent_state->host_config);
-  debug_print("  payload_buffer_size: %d\n", agent_state->payload_buffer_size);
-  debug_print("  payload_buffer: 0x%p\n", agent_state->payload_buffer);
-  debug_print("  ve_buf: 0x%p\n", agent_state->ve_buf);
-  debug_print("  ve_num: %d\n", agent_state->ve_num);
-  debug_print("  ve_pos: %d\n", agent_state->ve_pos);
-  debug_print("  ve_mis: %d\n", agent_state->ve_mis);
-  debug_print("  agent_state_address: 0x%p\n", agent_state->agent_state_address);
-}
-
 // TODO: create fns for setting variable init values, set-/copy-/allocate memory
 STATIC
 VOID
@@ -230,7 +207,7 @@ kafl_agent_init (
     kafl_habort("Warning: Agent was already initialized!\n");
   }
 
-  debug_print("[*] Initialize kAFL Agent\n");
+  pr_warn("[*] Initialize kAFL Agent\n");
 
   //
   // initial fuzzer handshake
@@ -254,7 +231,6 @@ kafl_agent_init (
   //
   if (host_config.host_magic != NYX_HOST_MAGIC ||
       host_config.host_version != NYX_HOST_VERSION) {
-    debug_print("host_config magic/version mismatch!\n");
     kafl_habort("GET_HOST_CNOFIG magic/version mismatch!\n");
   }
 
@@ -286,7 +262,7 @@ kafl_agent_init (
   //
   // submit payload buffer address to HV
   //
-  debug_print("kAFL %a: Submitting payload buffer address to hypervisor (0x%lx)\n", __FUNCTION__, (UINTN)payload_buffer);
+  debug_print("kAFL %a: submit payload buffer address to hypervisor (0x%lx)\n", __FUNCTION__, (UINTN)payload_buffer);
   kAFL_hypercall(HYPERCALL_KAFL_GET_PAYLOAD, (UINTN)payload_buffer);
 
   //
@@ -307,7 +283,7 @@ kafl_agent_init (
   //
   // fetch fuzz input for later #VE injection
   //
-  debug_print("kAFL %a: Starting kAFL loop...\n", __FUNCTION__);
+  pr_warn("[*] Starting kAFL loop\n");
   kAFL_hypercall(HYPERCALL_KAFL_NEXT_PAYLOAD, 0);
 
   payload = (kAFL_payload *)payload_buffer;
@@ -315,7 +291,7 @@ kafl_agent_init (
   ve_num = payload->size;
   ve_pos = 0;
   ve_mis = 0;
-  debug_print("kAFL %a: set payload to 0x%p, ve_buf: 0x%p, ve_num: %d\n", __FUNCTION__, payload, ve_buf, ve_num);
+  // debug_print("kAFL %a: set payload to 0x%p, ve_buf: 0x%p, ve_num: %d\n", __FUNCTION__, payload, ve_buf, ve_num);
 
   if (payload->flags.raw_data != 0)
   {
@@ -347,7 +323,7 @@ kafl_agent_init (
   //
   // start coverage tracing
   //
-  debug_print("kAFL %a: start coverage tracking\n", __FUNCTION__);
+  debug_print("kAFL %a: start coverage tracing\n", __FUNCTION__);
   kAFL_hypercall(HYPERCALL_KAFL_ACQUIRE, 0);
 }
 
@@ -365,9 +341,7 @@ _internal_fuzz_buffer (
   UINT32 ve_num = agent_state->ve_num;
   UINT32 ve_mis = agent_state->ve_mis;
 
-  // TODO: fuzzer kickstart value must be at least num_bytes large, otherwise fuzzer won't work
-  debug_print("kAFL %a: Fuzz buf 0x%p Size %d (0x%x)\n", __FUNCTION__, buf, num_bytes, num_bytes);
-  debug_print("kAFL %a: ve_pos: %d, num_bytes: %d, ve_pos + num_bytes: %d, ve_num: %d\n", __FUNCTION__, ve_pos, num_bytes, ve_pos + num_bytes, ve_num);
+  //! fuzzer kickstart value must be at least num_bytes large, otherwise fuzzer won't work
   if (ve_pos + num_bytes > ve_num)
   {
     //
@@ -376,16 +350,13 @@ _internal_fuzz_buffer (
     ve_mis += num_bytes;
     agent_state->ve_mis = ve_mis;
     debug_print("kAFL %a: insufficient FuzBuf. ve_mis: %d\n", __FUNCTION__, ve_mis);
-    debug_print("kAFL %a: end here without return\n", __FUNCTION__);
     kafl_agent_done(agent_state);
     /* no return */
   }
 
-  debug_print("kAFL %a: CopyMem ve_pos + ve_buf: 0x%p, num_bytes: %d\n", __FUNCTION__, ve_pos + ve_buf, num_bytes);
   CopyMem(buf, ve_buf + ve_pos, num_bytes);
   ve_pos += num_bytes;
   agent_state->ve_pos = ve_pos;
-  debug_print("kAFL %a: new ve_pos: %d\n", __FUNCTION__, ve_pos);
 
   return num_bytes;
 }

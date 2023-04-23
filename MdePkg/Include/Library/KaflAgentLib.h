@@ -100,10 +100,4 @@ kafl_dump_buffer (
   IN  UINTN   BufSize
 );
 
-VOID
-EFIAPI
-kafl_show_state (
-  VOID
-);
-
 #endif
