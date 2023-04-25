@@ -218,7 +218,7 @@ TdxStartup(
   TransferHobList (VmmHobList);
 
 #ifdef CONFIG_KAFL_FUZZ_TDHOB
-  kafl_hprintf("Regular Exit\n");
+  // regular exit
   kafl_fuzz_event(KAFL_DONE);
 #endif
 
