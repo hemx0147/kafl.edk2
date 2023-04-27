@@ -29,7 +29,7 @@
 # define KAFL_AGENT_TDHOB_FUZZ_SIZE 730
 #endif
 
-#define KAFL_DEBUG_PRINT_ACTIVE
+// #define KAFL_DEBUG_PRINT_ACTIVE
 // allocate only few pages for buffer (larger values (e.g. default value of 32) may cause errors)
 #define KAFL_AGENT_PAYLOAD_MAX_SIZE (16 * EFI_PAGE_SIZE)
 

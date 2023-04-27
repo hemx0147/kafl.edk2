@@ -858,7 +858,6 @@ VirtioBlkInit (
   // step 4a -- retrieve and validate features
   //
   Status = Dev->VirtIo->GetDeviceFeatures (Dev->VirtIo, &Features);
-  kafl_hprintf("Got device Features 0x%x\n", Features);
   if (EFI_ERROR (Status)) {
     goto Failed;
   }
@@ -1030,9 +1029,12 @@ VirtioBlkInit (
   Dev->BlockIoMedia.LastBlock        = DivU64x32 (NumSectors,
                                          BlockSize / 512) - 1;
 
-  DEBUG ((DEBUG_INFO, "%a: LbaSize=0x%x[B] NumBlocks=0x%Lx[Lba]\n",
-    __FUNCTION__, Dev->BlockIoMedia.BlockSize,
-    Dev->BlockIoMedia.LastBlock + 1));
+  //
+  // kAFL blkdev-init harness: disable debug messages
+  //
+  // DEBUG ((DEBUG_INFO, "%a: LbaSize=0x%x[B] NumBlocks=0x%Lx[Lba]\n",
+  //   __FUNCTION__, Dev->BlockIoMedia.BlockSize,
+  //   Dev->BlockIoMedia.LastBlock + 1));
 
   if (Features & VIRTIO_BLK_F_TOPOLOGY) {
     Dev->BlockIo.Revision = EFI_BLOCK_IO_PROTOCOL_REVISION3;
@@ -1041,11 +1043,14 @@ VirtioBlkInit (
     Dev->BlockIoMedia.LogicalBlocksPerPhysicalBlock = 1u << PhysicalBlockExp;
     Dev->BlockIoMedia.OptimalTransferLengthGranularity = OptIoSize;
 
-    DEBUG ((DEBUG_INFO, "%a: FirstAligned=0x%Lx[Lba] PhysBlkSize=0x%x[Lba]\n",
-      __FUNCTION__, Dev->BlockIoMedia.LowestAlignedLba,
-      Dev->BlockIoMedia.LogicalBlocksPerPhysicalBlock));
-    DEBUG ((DEBUG_INFO, "%a: OptimalTransferLengthGranularity=0x%x[Lba]\n",
-      __FUNCTION__, Dev->BlockIoMedia.OptimalTransferLengthGranularity));
+    //
+    // kAFL blkdev-init harness: disable debug messages
+    //
+    // DEBUG ((DEBUG_INFO, "%a: FirstAligned=0x%Lx[Lba] PhysBlkSize=0x%x[Lba]\n",
+    //   __FUNCTION__, Dev->BlockIoMedia.LowestAlignedLba,
+    //   Dev->BlockIoMedia.LogicalBlocksPerPhysicalBlock));
+    // DEBUG ((DEBUG_INFO, "%a: OptimalTransferLengthGranularity=0x%x[Lba]\n",
+    //   __FUNCTION__, Dev->BlockIoMedia.OptimalTransferLengthGranularity));
   }
   return EFI_SUCCESS;
 
@@ -1057,7 +1062,7 @@ ReleaseQueue:
 
 Failed:
 #ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
-  kafl_hprintf("Exit on VirtioBlkInit Error\n");
+  // Exit on VirtioBlkInit Error
   kafl_fuzz_event(KAFL_DONE);
 #endif
   //
@@ -1212,7 +1217,7 @@ VirtioBlkDriverBindingStart (
   }
 
 #ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
-  kafl_hprintf("Regular Exit\n");
+  // Regular Exit
   kafl_fuzz_event(KAFL_DONE);
 #endif
   return EFI_SUCCESS;
@@ -1231,7 +1236,7 @@ FreeVirtioBlk:
   FreePool (Dev);
 
 #ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
-  kafl_hprintf("Exit on DriverBindingStart Error\n");
+  // Exit on DriverBindingStart Error
   kafl_fuzz_event(KAFL_DONE);
 #endif
 

@@ -919,8 +919,6 @@ RootBridgeIoIoRead (
   EFI_STATUS                                    Status;
   PCI_ROOT_BRIDGE_INSTANCE                      *RootBridge;
 
-  DEBUG_FCALL;
-
   Status = RootBridgeIoCheckParameter (
              This, IoOperation, Width,
              Address, Count, Buffer

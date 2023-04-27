@@ -395,8 +395,6 @@ CpuIoServiceRead (
   EFI_CPU_IO_PROTOCOL_WIDTH  OperationWidth;
   UINT8                      *Uint8Buffer;
 
-  DEBUG_FCALL;
-
   Status = CpuIoCheckParameter (FALSE, Width, Address, Count, Buffer);
   if (EFI_ERROR (Status)) {
     return Status;

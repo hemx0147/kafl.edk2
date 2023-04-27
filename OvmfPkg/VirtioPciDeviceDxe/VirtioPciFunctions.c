@@ -51,8 +51,6 @@ VirtioPciDeviceRead (
 {
   VIRTIO_PCI_DEVICE         *Dev;
 
-  DEBUG_FCALL;
-
   Dev = VIRTIO_PCI_DEVICE_FROM_VIRTIO_DEVICE (This);
 
   return VirtioPciIoRead (Dev,
