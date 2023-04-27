@@ -850,7 +850,7 @@ VirtioBlkInit (
     goto Failed;
   }
 
-#ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
+#if defined CONFIG_KAFL_FUZZ_BLK_DEV_INIT || defined CONFIG_KAFL_FUZZ_BLK_DEV_INIT_LARGE
   kafl_fuzz_event(KAFL_ENABLE);
 #endif
 
