@@ -1056,6 +1056,10 @@ ReleaseQueue:
   VirtioRingUninit (Dev->VirtIo, &Dev->Ring);
 
 Failed:
+#ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
+  kafl_hprintf("Exit on VirtioBlkInit Error\n");
+  kafl_fuzz_event(KAFL_DONE);
+#endif
   //
   // Notify the host about our failure to setup: virtio-0.9.5, 2.2.2.1 Device
   // Status. VirtIo access failure here should not mask the original error.
@@ -1227,7 +1231,7 @@ FreeVirtioBlk:
   FreePool (Dev);
 
 #ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
-  kafl_hprintf("Exit on Error\n");
+  kafl_hprintf("Exit on DriverBindingStart Error\n");
   kafl_fuzz_event(KAFL_DONE);
 #endif
 
