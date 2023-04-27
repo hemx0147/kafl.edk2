@@ -103,8 +103,6 @@ VirtioPciGetDeviceFeatures (
   EFI_STATUS                Status;
   UINT32                    Features32;
 
-  DEBUG_FCALL;
-
   if (DeviceFeatures == NULL) {
     return EFI_INVALID_PARAMETER;
   }
