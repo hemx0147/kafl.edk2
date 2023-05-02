@@ -56,7 +56,7 @@ kafl_fuzz_event (
 STATIC
 VOID
 EFIAPI
-kafl_show_local_state (
+show_local_state (
   VOID
   )
 {
@@ -85,7 +85,7 @@ kafl_show_local_state (
 STATIC
 VOID
 EFIAPI
-kafl_copy_state (
+copy_state (
   IN  agent_state_t   *DstState,
   IN  agent_state_t   *SrcState
 )
@@ -125,7 +125,7 @@ update_global_state (
     kafl_habort("global & local agent state pointers are not equal after copy!\n");
   }
 
-  kafl_show_local_state();
+  show_local_state();
 }
 
 VOID
@@ -145,7 +145,7 @@ update_local_state (
   if (gAS)
   {
     // only update local state if global agent state pointer is not NULL
-    kafl_copy_state(&agent_state, gAS);
-    kafl_show_local_state();
+    copy_state(&agent_state, gAS);
+    show_local_state();
   }
 }
