@@ -12,21 +12,13 @@
 
 // store agent state as struct in UEFI var to make it available accross compilation units in DXE phase
 // Note: keep struct members fixed-length to be able to use copy-assignment operator
-#define AGENT_STATE_ID "KAFLSTATE"
-#define AGENT_STATE_ID_SIZE 10     // length of kafl state id string
 typedef struct agent_state_s {
-  CHAR8 id_string[AGENT_STATE_ID_SIZE];
   BOOLEAN agent_initialized;
   BOOLEAN fuzz_enabled;
-  agent_config_t agent_config;
-  host_config_t host_config;
-  UINTN payload_buffer_size;
-  UINT8 *payload_buffer;
   UINT8 *ve_buf;
   UINT32 ve_num;
   UINT32 ve_pos;
   UINT32 ve_mis;
-  UINT8 *agent_state_address;
 } agent_state_t;
 
 
