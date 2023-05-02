@@ -960,22 +960,22 @@ SecCoreStartupWithStack (
   volatile UINT8              *Table;
 
 #ifdef KAFL_ACTIVATE
-  // memory space for kAFL agent payload buffer & agent state used for pre-BDS cross-module communication
+  // memory space for kAFL agent payload buffer & pointer for agent state struct used for pre-BDS, cross-module communication of agent instances
   // defining buffer in global space with aligned attribute causes errors so we define it here
   // this is ok since this function never returns but only calls another function (-> stack is never unwinded)
-  UINT8 gAgentStateSpace[KAFL_AGENT_STATE_STRUCT_SIZE] = { 0 };  // size defined in kAFL agent lib
   UINT8 gAgentPayloadBufSpace[KAFL_AGENT_PAYLOAD_MAX_SIZE] __attribute__((aligned(EFI_PAGE_SIZE)));
+  VOID *gAgentStatePointer = NULL;
 
   BOOLEAN AbortExec = FALSE;
-  if ((UINT8*)gAgentStateSpace != gKaflAgentStateStructAddr)
+  if (&gAgentStatePointer != gKaflAgentStatePtrAddr)
   {
-    kafl_hprintf("KAFL AGENT STATE ADDRESS MISMATCH! (expected: 0x%p, real: 0x%p)\n", gKaflAgentStateStructAddr, gAgentStateSpace);
+    kafl_hprintf("KAFL AGENT STATE POINTER ADDRESS MISMATCH! (expected: 0x%p, real: 0x%p)\n", gKaflAgentStatePtrAddr, &gAgentStatePointer);
     AbortExec = TRUE;
   }
 
-  if ((UINT8*)gAgentPayloadBufSpace != gKaflAgentPayloadBufAddr)
+  if (gAgentPayloadBufSpace != gKaflAgentPayloadBufAddr)
   {
-    kafl_hprintf("KAFL AGENT PAYLOAD BUFFER ADDRESS MISMATCH! (expected: 0x%p, real: 0x%p)\n", gKaflAgentPayloadBufAddr, gAgentPayloadBufSpace);
+    kafl_hprintf("KAFL AGENT PAYLOAD BUFFER SPACE ADDRESS MISMATCH! (expected: 0x%p, real: 0x%p)\n", gKaflAgentPayloadBufAddr, gAgentPayloadBufSpace);
     AbortExec = TRUE;
   }
 
@@ -984,8 +984,8 @@ SecCoreStartupWithStack (
     kafl_fuzz_event(KAFL_ABORT);
   }
 
-  kafl_hprintf("global kAFL agent state struct at 0x%p, size %d (0x%x)\n", gAgentStateSpace, KAFL_AGENT_STATE_STRUCT_SIZE, KAFL_AGENT_STATE_STRUCT_SIZE);
-  kafl_hprintf("global kAFL agent payload buffer at 0x%p, size %d (0x%x)\n", gAgentPayloadBufSpace, KAFL_AGENT_PAYLOAD_MAX_SIZE, KAFL_AGENT_PAYLOAD_MAX_SIZE);
+  kafl_hprintf("global kAFL agent state pointer address at 0x%p\n", &gAgentStatePointer);
+  kafl_hprintf("global kAFL agent payload buffer space at 0x%p, size %d (0x%x)\n", gAgentPayloadBufSpace, KAFL_AGENT_PAYLOAD_MAX_SIZE, KAFL_AGENT_PAYLOAD_MAX_SIZE);
 #endif
 
 #if defined (MDE_CPU_X64)

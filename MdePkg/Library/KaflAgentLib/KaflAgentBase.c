@@ -28,11 +28,12 @@ STATIC agent_state_t agent_state = {
 STATIC
 VOID
 EFIAPI
-kafl_show_state (
+kafl_show_local_state (
   VOID
   )
 {
-  UINTN as_size = sizeof agent_state;
+  UINTN as_size = sizeof(agent_state);
+  debug_print("kAFL global agent state address at 0x%p, pointing to agent state at 0x%p\n", gKaflAgentStatePtrAddr, *(agent_state_t**)gKaflAgentStatePtrAddr);
   debug_print("kAFL local agent state at 0x%p, size %d (0x%x):\n", &agent_state, as_size, as_size);
   debug_print("  id_string: %a\n", agent_state.id_string);
   debug_print("  agent_initialized: %d\n", agent_state.agent_initialized);
@@ -81,30 +82,6 @@ kafl_fuzz_event (
   update_global_state();
 }
 
-/**
-  Compare two agent state structs for equality.
-
-  @param ThisState    Pointer to the first agent state struct.
-  @param OtherState   Pointer to the second agent state struct.
-
-  @retval TRUE    If both agent states are equal and not NULL
-  @retval FALSE   Otherwise
-**/
-STATIC
-BOOLEAN
-EFIAPI
-state_is_equal (
-  agent_state_t *ThisState,
-  agent_state_t *OtherState
-)
-{
-  if (ThisState == NULL || OtherState == NULL)
-  {
-    return FALSE;
-  }
-  return 0 == CompareMem(ThisState, OtherState, KAFL_AGENT_STATE_STRUCT_SIZE);
-}
-
 VOID
 EFIAPI
 update_global_state (
@@ -113,24 +90,21 @@ update_global_state (
 {
   debug_print("update global state\n");
 
-  if (!gKaflAgentStateStructAddr)
+  if (!gKaflAgentStatePtrAddr)
   {
-    kafl_habort("Invalid agent state struct address.\n");
+    kafl_habort("Invalid agent state pointer address.\n");
   }
 
-  //? maybe use copymem instead?
-  // CopyMem(gKaflAgentStateStructAddr, &agent_state, KAFL_AGENT_STATE_STRUCT_SIZE);
-  *(agent_state_t*)gKaflAgentStateStructAddr = agent_state;
+  *(agent_state_t**)gKaflAgentStatePtrAddr = &agent_state;
 
-  // verify that data was written correctly
-  agent_state_t *gAS = (agent_state_t*)gKaflAgentStateStructAddr;
-  if (!state_is_equal(gAS, &agent_state))
+  // verify that agent state pointer was written correctly
+  agent_state_t *gAS = *(agent_state_t**)gKaflAgentStatePtrAddr;
+  if (gAS != &agent_state)
   {
-    kafl_habort("global & local agent state are not equal after copy!\n");
+    kafl_habort("global & local agent state pointers are not equal after copy!\n");
   }
 
-  debug_print("New kAFL global state:");
-  kafl_show_state();
+  kafl_show_local_state();
 }
 
 VOID
@@ -141,28 +115,16 @@ update_local_state (
 {
   debug_print("update local state\n");
 
-  if (!gKaflAgentStateStructAddr)
+  if (!gKaflAgentStatePtrAddr)
   {
-    kafl_habort("Invalid agent state struct address.\n");
+    kafl_habort("Invalid agent state pointer address.\n");
   }
 
-  agent_state_t *gAS = (agent_state_t*)gKaflAgentStateStructAddr;
-  if ((gAS->id_string == NULL) || (gAS->agent_state_address == 0))
+  agent_state_t *gAS = *(agent_state_t**)gKaflAgentStatePtrAddr;
+  if (gAS)
   {
-    // global agent state contains only null data -> no need to update local state
-    return;
-  }
-
-  // check if agent state struct markers are valid
-  if (AsciiStrnCmp(gAS->id_string, AGENT_STATE_ID, AGENT_STATE_ID_SIZE) == 0 &&
-      gAS->agent_state_address == gKaflAgentStateStructAddr)
-  {
-    // global agent state was already initialized -> prefer it over file-local state struct
-    //? maybe use copymem instead?
-    // CopyMem(&agent_state, gAS, KAFL_AGENT_STATE_STRUCT_SIZE);
+    // only update local state if global agent state pointer is not NULL
     agent_state = *gAS;
+    kafl_show_local_state();
   }
-
-  debug_print("New kAFL local state:");
-  kafl_show_state();
 }

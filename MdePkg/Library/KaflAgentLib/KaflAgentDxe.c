@@ -76,7 +76,7 @@ kafl_get_agent_state (
 
 VOID
 EFIAPI
-kafl_show_state (
+kafl_show_local_state (
   VOID
   )
 {

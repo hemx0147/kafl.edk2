@@ -32,13 +32,11 @@
 #define KAFL_AGENT_PAYLOAD_MAX_SIZE (16 * EFI_PAGE_SIZE)
 
 
-//! keep consistent with sizeof(agent_state_t)
-#define KAFL_AGENT_STATE_STRUCT_SIZE 128
 //! keep consistent with real addresses of agent state struct and payload buffer in SecMain.c
 #define KAFL_AGENT_PAYLOAD_BUF_ADDR 0x80F000
-#define KAFL_AGENT_STATE_STRUCT_ADDR 0x80ED50
+#define KAFL_AGENT_STATE_STRUCT_ADDR 0x80ECA0
 STATIC UINT8 *gKaflAgentPayloadBufAddr __attribute__((used)) = (UINT8*) KAFL_AGENT_PAYLOAD_BUF_ADDR;
-STATIC UINT8 *gKaflAgentStateStructAddr __attribute__((used)) = (UINT8*) KAFL_AGENT_STATE_STRUCT_ADDR;
+STATIC VOID **gKaflAgentStatePtrAddr __attribute__((used)) = (VOID**) KAFL_AGENT_STATE_STRUCT_ADDR;
 
 enum kafl_event {
   KAFL_ENABLE,
