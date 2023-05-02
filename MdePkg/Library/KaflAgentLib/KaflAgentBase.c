@@ -19,23 +19,6 @@ agent_state_t agent_state = {
   .ve_mis = 0,
 };
 
-STATIC
-VOID
-EFIAPI
-kafl_show_local_state (
-  VOID
-  )
-{
-  UINTN as_size = sizeof(agent_state);
-  debug_print("kAFL global agent state address at 0x%p, pointing to agent state at 0x%p\n", gKaflAgentStatePtrAddr, *(agent_state_t**)gKaflAgentStatePtrAddr);
-  debug_print("kAFL local agent state at 0x%p, size %d (0x%x):\n", &agent_state, as_size, as_size);
-  debug_print("  agent_initialized: %d\n", agent_state.agent_initialized);
-  debug_print("  fuzz_enabled: %d\n", agent_state.fuzz_enabled);
-  debug_print("  ve_buf: 0x%p\n", agent_state.ve_buf);
-  debug_print("  ve_num: %d\n", agent_state.ve_num);
-  debug_print("  ve_pos: %d\n", agent_state.ve_pos);
-  debug_print("  ve_mis: %d\n", agent_state.ve_mis);
-}
 
 UINTN
 EFIAPI
@@ -68,6 +51,56 @@ kafl_fuzz_event (
   update_local_state();
   internal_fuzz_event(e, &agent_state);
   update_global_state();
+}
+
+STATIC
+VOID
+EFIAPI
+kafl_show_local_state (
+  VOID
+  )
+{
+  UINTN as_size = sizeof(agent_state);
+  debug_print("kAFL global agent state address at 0x%p, pointing to agent state at 0x%p\n", gKaflAgentStatePtrAddr, *(agent_state_t**)gKaflAgentStatePtrAddr);
+  debug_print("kAFL local agent state at 0x%p, size %d (0x%x):\n", &agent_state, as_size, as_size);
+  debug_print("  agent_initialized: %d\n", agent_state.agent_initialized);
+  debug_print("  fuzz_enabled: %d\n", agent_state.fuzz_enabled);
+  debug_print("  ve_buf: 0x%p\n", agent_state.ve_buf);
+  debug_print("  ve_num: %d\n", agent_state.ve_num);
+  debug_print("  ve_pos: %d\n", agent_state.ve_pos);
+  debug_print("  ve_mis: %d\n", agent_state.ve_mis);
+}
+
+/**
+  Copy an agent state by copying each member individually.
+
+  Pointer dereferenciation (*DstState = *SrcState) may work as well, but assumes
+  that members in both structs have the same order. This may not be the case here
+  since we copy structs across compilation units (modules) and hence the compiler
+  might decide to reorder struct members differently in different modules.
+
+  @param DstState   The state into which data will be copied.
+  @param SrcState   The state from which data will be copied.
+**/
+STATIC
+VOID
+EFIAPI
+kafl_copy_state (
+  IN  agent_state_t   *DstState,
+  IN  agent_state_t   *SrcState
+)
+{
+  if (!DstState || !SrcState)
+  {
+    kafl_habort("cannot copy agent state; pointer to Source or Destination state are NULL.\n");
+  }
+
+  DstState->agent_initialized = SrcState->agent_initialized;
+  DstState->fuzz_enabled = SrcState->fuzz_enabled;
+  DstState->ve_buf = SrcState->ve_buf;
+  DstState->ve_num = SrcState->ve_num;
+  DstState->ve_pos = SrcState->ve_pos;
+  DstState->ve_mis = SrcState->ve_mis;
 }
 
 VOID
@@ -112,7 +145,7 @@ update_local_state (
   if (gAS)
   {
     // only update local state if global agent state pointer is not NULL
-    agent_state = *gAS;
+    kafl_copy_state(&agent_state, gAS);
     kafl_show_local_state();
   }
 }

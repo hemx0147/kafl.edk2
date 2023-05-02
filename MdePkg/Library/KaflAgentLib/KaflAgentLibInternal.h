@@ -13,13 +13,13 @@
 // store agent state as struct in UEFI var to make it available accross compilation units in DXE phase
 // Note: keep struct members fixed-length to be able to use copy-assignment operator
 typedef struct agent_state_s {
-  BOOLEAN agent_initialized;
-  BOOLEAN fuzz_enabled;
-  UINT8 *ve_buf;
-  UINT32 ve_num;
-  UINT32 ve_pos;
-  UINT32 ve_mis;
-} agent_state_t;
+  BOOLEAN   agent_initialized;
+  BOOLEAN   fuzz_enabled;
+  UINT8     *ve_buf;
+  UINT32    ve_num;
+  UINT32    ve_pos;
+  UINT32    ve_mis;
+} __attribute__((packed)) agent_state_t;
 
 
 VOID
