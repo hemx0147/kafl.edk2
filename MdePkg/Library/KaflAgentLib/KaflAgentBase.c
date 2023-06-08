@@ -10,43 +10,15 @@
 
 
 // local agent state
-STATIC agent_state_t agent_state = {
-  .id_string = AGENT_STATE_ID,
+agent_state_t agent_state = {
   .agent_initialized = FALSE,
   .fuzz_enabled = FALSE,
-  .agent_config = { 0 },
-  .host_config = { 0 },
-  .payload_buffer_size = KAFL_AGENT_PAYLOAD_MAX_SIZE,
-  .payload_buffer = (UINT8*) KAFL_AGENT_PAYLOAD_BUF_ADDR,
   .ve_buf = NULL,
   .ve_num = 0,
   .ve_pos = 0,
   .ve_mis = 0,
-  .agent_state_address = (UINT8*) KAFL_AGENT_STATE_STRUCT_ADDR
 };
 
-STATIC
-VOID
-EFIAPI
-kafl_show_state (
-  VOID
-  )
-{
-  UINTN as_size = sizeof agent_state;
-  debug_print("kAFL local agent state at 0x%p, size %d (0x%x):\n", &agent_state, as_size, as_size);
-  debug_print("  id_string: %a\n", agent_state.id_string);
-  debug_print("  agent_initialized: %d\n", agent_state.agent_initialized);
-  debug_print("  fuzz_enabled: %d\n", agent_state.fuzz_enabled);
-  debug_print("  agent_config: 0x%p\n", agent_state.agent_config);
-  debug_print("  host_config: 0x%p\n", agent_state.host_config);
-  debug_print("  payload_buffer_size: %d\n", agent_state.payload_buffer_size);
-  debug_print("  payload_buffer: 0x%p\n", agent_state.payload_buffer);
-  debug_print("  ve_buf: 0x%p\n", agent_state.ve_buf);
-  debug_print("  ve_num: %d\n", agent_state.ve_num);
-  debug_print("  ve_pos: %d\n", agent_state.ve_pos);
-  debug_print("  ve_mis: %d\n", agent_state.ve_mis);
-  debug_print("  agent_state_address: 0x%p\n", agent_state.agent_state_address);
-}
 
 UINTN
 EFIAPI
@@ -81,28 +53,54 @@ kafl_fuzz_event (
   update_global_state();
 }
 
+STATIC
+VOID
+EFIAPI
+show_local_state (
+  VOID
+  )
+{
+  UINTN as_size = sizeof(agent_state);
+  debug_print("kAFL global agent state address at 0x%p, pointing to agent state at 0x%p\n", gKaflAgentStatePtrAddr, *(agent_state_t**)gKaflAgentStatePtrAddr);
+  debug_print("kAFL local agent state at 0x%p, size %d (0x%x):\n", &agent_state, as_size, as_size);
+  debug_print("  agent_initialized: %d\n", agent_state.agent_initialized);
+  debug_print("  fuzz_enabled: %d\n", agent_state.fuzz_enabled);
+  debug_print("  ve_buf: 0x%p\n", agent_state.ve_buf);
+  debug_print("  ve_num: %d\n", agent_state.ve_num);
+  debug_print("  ve_pos: %d\n", agent_state.ve_pos);
+  debug_print("  ve_mis: %d\n", agent_state.ve_mis);
+}
+
 /**
-  Compare two agent state structs for equality.
+  Copy an agent state by copying each member individually.
 
-  @param ThisState    Pointer to the first agent state struct.
-  @param OtherState   Pointer to the second agent state struct.
+  Pointer dereferenciation (*DstState = *SrcState) may work as well, but assumes
+  that members in both structs have the same order. This may not be the case here
+  since we copy structs across compilation units (modules) and hence the compiler
+  might decide to reorder struct members differently in different modules.
 
-  @retval TRUE    If both agent states are equal and not NULL
-  @retval FALSE   Otherwise
+  @param DstState   The state into which data will be copied.
+  @param SrcState   The state from which data will be copied.
 **/
 STATIC
-BOOLEAN
+VOID
 EFIAPI
-state_is_equal (
-  agent_state_t *ThisState,
-  agent_state_t *OtherState
+copy_state (
+  IN  agent_state_t   *DstState,
+  IN  agent_state_t   *SrcState
 )
 {
-  if (ThisState == NULL || OtherState == NULL)
+  if (!DstState || !SrcState)
   {
-    return FALSE;
+    kafl_habort("cannot copy agent state; pointer to Source or Destination state are NULL.\n");
   }
-  return 0 == CompareMem(ThisState, OtherState, KAFL_AGENT_STATE_STRUCT_SIZE);
+
+  DstState->agent_initialized = SrcState->agent_initialized;
+  DstState->fuzz_enabled = SrcState->fuzz_enabled;
+  DstState->ve_buf = SrcState->ve_buf;
+  DstState->ve_num = SrcState->ve_num;
+  DstState->ve_pos = SrcState->ve_pos;
+  DstState->ve_mis = SrcState->ve_mis;
 }
 
 VOID
@@ -113,24 +111,21 @@ update_global_state (
 {
   debug_print("update global state\n");
 
-  if (!gKaflAgentStateStructAddr)
+  if (!gKaflAgentStatePtrAddr)
   {
-    kafl_habort("Invalid agent state struct address.\n");
+    kafl_habort("Invalid agent state pointer address.\n");
   }
 
-  //? maybe use copymem instead?
-  // CopyMem(gKaflAgentStateStructAddr, &agent_state, KAFL_AGENT_STATE_STRUCT_SIZE);
-  *(agent_state_t*)gKaflAgentStateStructAddr = agent_state;
+  *(agent_state_t**)gKaflAgentStatePtrAddr = &agent_state;
 
-  // verify that data was written correctly
-  agent_state_t *gAS = (agent_state_t*)gKaflAgentStateStructAddr;
-  if (!state_is_equal(gAS, &agent_state))
+  // verify that agent state pointer was written correctly
+  agent_state_t *gAS = *(agent_state_t**)gKaflAgentStatePtrAddr;
+  if (gAS != &agent_state)
   {
-    kafl_habort("global & local agent state are not equal after copy!\n");
+    kafl_habort("global & local agent state pointers are not equal after copy!\n");
   }
 
-  debug_print("New kAFL global state:");
-  kafl_show_state();
+  show_local_state();
 }
 
 VOID
@@ -141,28 +136,16 @@ update_local_state (
 {
   debug_print("update local state\n");
 
-  if (!gKaflAgentStateStructAddr)
+  if (!gKaflAgentStatePtrAddr)
   {
-    kafl_habort("Invalid agent state struct address.\n");
+    kafl_habort("Invalid agent state pointer address.\n");
   }
 
-  agent_state_t *gAS = (agent_state_t*)gKaflAgentStateStructAddr;
-  if ((gAS->id_string == NULL) || (gAS->agent_state_address == 0))
+  agent_state_t *gAS = *(agent_state_t**)gKaflAgentStatePtrAddr;
+  if (gAS)
   {
-    // global agent state contains only null data -> no need to update local state
-    return;
+    // only update local state if global agent state pointer is not NULL
+    copy_state(&agent_state, gAS);
+    show_local_state();
   }
-
-  // check if agent state struct markers are valid
-  if (AsciiStrnCmp(gAS->id_string, AGENT_STATE_ID, AGENT_STATE_ID_SIZE) == 0 &&
-      gAS->agent_state_address == gKaflAgentStateStructAddr)
-  {
-    // global agent state was already initialized -> prefer it over file-local state struct
-    //? maybe use copymem instead?
-    // CopyMem(&agent_state, gAS, KAFL_AGENT_STATE_STRUCT_SIZE);
-    agent_state = *gAS;
-  }
-
-  debug_print("New kAFL local state:");
-  kafl_show_state();
 }
