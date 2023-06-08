@@ -578,9 +578,9 @@
 !endif
 
 !if $(SOURCE_DEBUG_ENABLE) == TRUE
-  gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0x01
+  gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0x17
 !else
-  gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0x21
+  gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0x2F
 !endif
 
   # This PCD is used to set the base address of the PCI express hierarchy. It
