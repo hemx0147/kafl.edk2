@@ -90,14 +90,13 @@ kafl_fuzz_buffer (
   IN  VOID                    *fuzz_buf,
   IN  CONST VOID              *orig_buf,
   IN  CONST UINTN             *addr,
-  IN  CONST UINTN             num_bytes,
-  IN  CONST enum tdx_fuzz_loc type
+  IN  CONST UINTN             num_bytes
   )
 {
   UINTN NumFuzzed;
 
   kafl_get_agent_state();
-  NumFuzzed = internal_fuzz_buffer(fuzz_buf, orig_buf, addr, num_bytes, type, &g_agent_state);
+  NumFuzzed = internal_fuzz_buffer(fuzz_buf, orig_buf, addr, num_bytes, &g_agent_state);
   kafl_store_agent_state();
   return NumFuzzed;
 }

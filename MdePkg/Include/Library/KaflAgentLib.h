@@ -58,16 +58,6 @@ enum kafl_event {
   KAFL_EVENT_MAX
 };
 
-enum tdx_fuzz_loc {
-  TDX_FUZZ_VIRTIO,
-  TDX_FUZZ_BOOT_LOADER,
-  TDX_FUZZ_BLK_DEV_INIT,
-  TDX_FUZZ_VIRTIO_PCI_IO,
-  TDX_FUZZ_BLK_DEV_MEDIA,
-  TDX_FUZZ_TDHOB,
-  TDX_FUZZ_MAX
-};
-
 VOID
 EFIAPI
 kafl_fuzz_event (
@@ -80,8 +70,7 @@ kafl_fuzz_buffer (
   IN  OUT   VOID                *fuzz_buf,
   IN  CONST VOID                *orig_buf,
   IN  CONST UINTN               *addr,
-  IN  CONST UINTN               num_bytes,
-  IN  CONST enum tdx_fuzz_loc   type
+  IN  CONST UINTN               num_bytes
 );
 
 VOID
