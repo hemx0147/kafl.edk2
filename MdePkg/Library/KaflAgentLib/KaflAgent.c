@@ -365,13 +365,10 @@ internal_fuzz_buffer (
   IN  CONST VOID              *orig_buf,
   IN  CONST UINTN             *addr,
   IN  CONST UINTN             num_bytes,
-  IN  CONST enum tdx_fuzz_loc type,
   IN  OUT  agent_state_t *agent_state
   )
 {
   UINTN num_fuzzed = 0;
-
-  // TODO: add fuzz filter
 
   // TODO: add trace tdx fuzz?
 
