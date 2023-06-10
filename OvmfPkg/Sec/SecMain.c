@@ -1012,7 +1012,7 @@ SecCoreStartupWithStack (
 #ifdef CONFIG_KAFL_FUZZ_TDHOB
     kafl_fuzz_event(KAFL_ENABLE);
     // size defined in KaflAgentLib.h
-    kafl_fuzz_buffer(TdHob, TdHob, (UINTN*)TdHob, KAFL_AGENT_TDHOB_FUZZ_SIZE, TDX_FUZZ_TDHOB);
+    kafl_fuzz_buffer(TdHob, TdHob, (UINTN*)TdHob, KAFL_AGENT_TDHOB_FUZZ_SIZE);
 #endif
 
     TdxStartup(&SecCoreData, TdHob, TdReturnData.TdInfo.Gpaw, ProcessLibraryConstructorList);

@@ -515,7 +515,7 @@ VirtioBlkReadBlocks (
 
   // UINTN* cast of packed struct results in unaligned pointer -> compute fuzbuf size manually to omit struct padding
   BlockMediaSize = 2 * (sizeof(UINT64) + sizeof(UINT32) + sizeof(UINT8));
-  kafl_fuzz_buffer((VOID*)&BlockMedia, (VOID*)&BlockMedia, (UINTN*)&BlockMedia, BlockMediaSize, TDX_FUZZ_BLK_DEV_MEDIA);
+  kafl_fuzz_buffer((VOID*)&BlockMedia, (VOID*)&BlockMedia, (UINTN*)&BlockMedia, BlockMediaSize);
 
   // assign remaining variables
   ReadOnly = BlockMedia.FlagField & 0x01;

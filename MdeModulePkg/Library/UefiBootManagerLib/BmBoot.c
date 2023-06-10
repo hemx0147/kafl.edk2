@@ -1879,7 +1879,7 @@ EfiBootManagerBoot (
     FileBuffer = BmGetNextLoadOptionBuffer (LoadOptionTypeBoot, BootOption->FilePath, &FilePath, &FileSize);
 
 #ifdef CONFIG_KAFL_FUZZ_BOOT_LOADER
-    kafl_fuzz_buffer(FileBuffer, FileBuffer, (UINTN*)FileBuffer, FileSize, TDX_FUZZ_BOOT_LOADER);
+    kafl_fuzz_buffer(FileBuffer, FileBuffer, (UINTN*)FileBuffer, FileSize);
 #endif
 
     if (FileBuffer != NULL) {
