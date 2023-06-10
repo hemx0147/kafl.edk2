@@ -490,86 +490,6 @@ VirtioBlkReadBlocks (
     return EFI_SUCCESS;
   }
 
-#if defined CONFIG_KAFL_FUZZ_BLK_DEV_MEDIA_SMALL || defined CONFIG_KAFL_FUZZ_BLK_DEV_MEDIA_LARGE
-  // virtio block device features influence the device media (block io protocol media)
-  // fuzzing device features directly Init() causes problems, so we only pretend that we did by fuzzing device media.
-  // information for variables structure is taken from VirtioBlockInit().
-
-  UINTN     BlockMediaSize;
-  BOOLEAN   ReadOnly;
-  BOOLEAN   WriteCaching;
-  BOOLEAN   FeaturesXTopology;
-  UINT64    LastBlock;
-  UINT32    LogBPBlock;
-
-  struct  BlockMedia {
-    UINT64  NumSectors;
-    UINT64  LowestAlLBA;
-    UINT32  BlockSize;
-    UINT32  OptimalTLenGranu;
-    UINT8   LogBPBlockShift;
-    UINT8   FlagField;
-  } BlockMedia = { 0 };
-
-  kafl_fuzz_event(KAFL_ENABLE);
-
-  // UINTN* cast of packed struct results in unaligned pointer -> compute fuzbuf size manually to omit struct padding
-  BlockMediaSize = 2 * (sizeof(UINT64) + sizeof(UINT32) + sizeof(UINT8));
-  kafl_fuzz_buffer((VOID*)&BlockMedia, (VOID*)&BlockMedia, (UINTN*)&BlockMedia, BlockMediaSize);
-
-  // assign remaining variables
-  ReadOnly = BlockMedia.FlagField & 0x01;
-  WriteCaching = BlockMedia.FlagField & 0x02;
-  FeaturesXTopology = BlockMedia.FlagField & 0x04;
-  LastBlock = DivU64x32 (BlockMedia.NumSectors, BlockMedia.BlockSize / 512) - 1;
-  LogBPBlock = 1u << BlockMedia.LogBPBlockShift;
-
-  // assign variables to BlockIoMedia
-  This->Media->ReadOnly = ReadOnly;
-  This->Media->WriteCaching = WriteCaching;
-  This->Media->BlockSize = BlockMedia.BlockSize;
-  This->Media->LastBlock = LastBlock;
-  if (FeaturesXTopology)
-  {
-    This->Media->LowestAlignedLba = BlockMedia.LowestAlLBA;
-    This->Media->LogicalBlocksPerPhysicalBlock = LogBPBlock;
-    This->Media->OptimalTransferLengthGranularity = BlockMedia.OptimalTLenGranu;
-  }
-
-  //
-  // kAFL: debug prints
-  //
-// #define VIO_BLK_DEV_MEDIA_FUZZ_DEBUG_ENABLED
-# ifdef VIO_BLK_DEV_MEDIA_FUZZ_DEBUG_ENABLED
-  kafl_dump_buffer((UINT8*)&BlockMedia, sizeof(BlockMedia));  // whole struct buffer
-  kafl_dump_buffer((UINT8*)&BlockMedia, BlockMediaSize);      // only relevant bytes
-  kafl_hprintf("NumSectors: %lX, LBPBlockShift: %X, FlagField: %X, FXTopology: %X\n",
-    BlockMedia.NumSectors,
-    BlockMedia.LogBPBlockShift,
-    BlockMedia.FlagField,
-    FeaturesXTopology
-  );
-  kafl_hprintf("FUZZ DevMedia LALBA: %lX, BlockSize: %X, OTLGranu: %X, ReadOnly: %X, WriteCaching: %X, LastBlock: %lX, LBPBlock: %X\n",
-    BlockMedia.LowestAlLBA,
-    BlockMedia.BlockSize,
-    BlockMedia.OptimalTLenGranu,
-    ReadOnly,
-    WriteCaching,
-    LastBlock,
-    LogBPBlock
-  );
-  kafl_hprintf("USED DevMedia LALBA: %lX, BlockSize: %X, OTLGranu: %X, ReadOnly: %X, WriteCaching: %X, LastBlock: %lX, LBPBlock: %X\n",
-    This->Media->LowestAlignedLba,
-    This->Media->BlockSize,
-    This->Media->OptimalTransferLengthGranularity,
-    This->Media->ReadOnly,
-    This->Media->WriteCaching,
-    This->Media->LastBlock,
-    This->Media->LogicalBlocksPerPhysicalBlock
-  );
-# endif
-#endif
-
   Dev = VIRTIO_BLK_FROM_BLOCK_IO (This);
   Status = VerifyReadWriteRequest (
              &Dev->BlockIoMedia,
@@ -578,7 +498,7 @@ VirtioBlkReadBlocks (
              FALSE               // RequestIsWrite
              );
   if (EFI_ERROR (Status)) {
-#if defined CONFIG_KAFL_FUZZ_BLK_DEV_INIT || defined CONFIG_KAFL_FUZZ_BLK_DEV_MEDIA_SMALL || defined CONFIG_KAFL_FUZZ_BLK_DEV_MEDIA_LARGE
+#ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
     kafl_hprintf("Exit on Error\n");
     kafl_fuzz_event(KAFL_DONE);
 #endif
@@ -592,12 +512,6 @@ VirtioBlkReadBlocks (
            Buffer,
            FALSE       // RequestIsWrite
            );
-
-#ifdef CONFIG_KAFL_FUZZ_BLK_DEV_MEDIA_SMALL
-  kafl_hprintf("Regular Exit\n");
-  kafl_fuzz_event(KAFL_DONE);
-#endif
-
   return Status;
 }
 
