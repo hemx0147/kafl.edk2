@@ -1091,7 +1091,6 @@ BdsEntry (
   DEBUG ((EFI_D_ERROR, "[Bds] Unable to boot!\n"));
 #ifdef KAFL_ACTIVATE
   kafl_hprintf("kAFL: stop fuzzing loop before entering unable to boot CPU deadloop\n");
-  // also regular exit for: CONFIG_KAFL_FUZZ_BLK_DEV_INIT_LARGE
   kafl_fuzz_event(KAFL_DONE);
   kafl_fuzz_event(KAFL_ABORT);
 #endif
