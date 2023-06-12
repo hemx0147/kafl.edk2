@@ -434,10 +434,19 @@ CpuIoServiceRead (
   for (Uint8Buffer = Buffer; Count > 0; Address += InStride, Uint8Buffer += OutStride, Count--) {
     if (OperationWidth == EfiCpuIoWidthUint8) {
       *Uint8Buffer = IoRead8 ((UINTN)Address);
+#ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
+      kafl_fuzz_buffer(Uint8Buffer, Uint8Buffer, (UINTN*) Uint8Buffer, sizeof(UINT8));
+#endif
     } else if (OperationWidth == EfiCpuIoWidthUint16) {
       *((UINT16 *)Uint8Buffer) = IoRead16 ((UINTN)Address);
+#ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
+      kafl_fuzz_buffer((UINT16 *)Uint8Buffer, (UINT16 *)Uint8Buffer, (UINTN*) Uint8Buffer, sizeof(UINT16));
+#endif
     } else if (OperationWidth == EfiCpuIoWidthUint32) {
       *((UINT32 *)Uint8Buffer) = IoRead32 ((UINTN)Address);
+#ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
+      kafl_fuzz_buffer((UINT32 *)Uint8Buffer, (UINT32 *)Uint8Buffer, (UINTN*) Uint8Buffer, sizeof(UINT32));
+#endif
     }
   }
 
