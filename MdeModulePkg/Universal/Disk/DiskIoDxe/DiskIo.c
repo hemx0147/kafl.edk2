@@ -126,7 +126,6 @@ DiskIoDriverBindingStart (
   DISK_IO_PRIVATE_DATA  *Instance;
   EFI_TPL               OldTpl;
 
-  DEBUG_FCALL;
 #ifdef CONFIG_KAFL_FUZZ_VIRTIO_READ
   kafl_fuzz_event(KAFL_ENABLE);
 #endif
@@ -825,8 +824,6 @@ DiskIo2ReadWriteDisk (
   BOOLEAN                SubtaskBlocking;
   LIST_ENTRY             *SubtasksPtr;
 
-  DEBUG_FCALL;
-
   Task      = NULL;
   BlockIo   = Instance->BlockIo;
   BlockIo2  = Instance->BlockIo2;
@@ -1025,8 +1022,6 @@ DiskIo2ReadDiskEx (
   OUT VOID                        *Buffer
   )
 {
-  DEBUG_FCALL;
-
   return DiskIo2ReadWriteDisk (
            DISK_IO_PRIVATE_DATA_FROM_DISK_IO2 (This),
            FALSE, MediaId, Offset, Token, BufferSize, (UINT8 *) Buffer
@@ -1189,8 +1184,6 @@ DiskIoReadDisk (
   OUT VOID                 *Buffer
   )
 {
-  DEBUG_FCALL;
-
   return DiskIo2ReadWriteDisk (
            DISK_IO_PRIVATE_DATA_FROM_DISK_IO (This),
            FALSE, MediaId, Offset, NULL, BufferSize, (UINT8 *) Buffer
