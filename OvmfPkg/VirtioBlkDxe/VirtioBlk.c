@@ -256,6 +256,8 @@ SynchronousRequest (
   EFI_STATUS              Status;
   EFI_STATUS              UnmapStatus;
 
+  DEBUG_FCALL;
+
   BlockSize = Dev->BlockIoMedia.BlockSize;
 
   //
@@ -428,6 +430,14 @@ SynchronousRequest (
     Status = EFI_DEVICE_ERROR;
   }
 
+  // just inject stuff in ring?
+  kafl_hprintf("Sizes of Request: %d, BufferSize: %d, HostStatus: %d\n", sizeof Request, BufferSize, sizeof *HostStatus);
+  kafl_hprintf("Virtio Ring: 0x%p\n", Dev->Ring);
+  kafl_hprintf("RequestDevAddr: 0x%p\n", RequestDeviceAddress);
+  kafl_hprintf("BufferDevAddr : 0x%p\n", BufferDeviceAddress);
+  kafl_hprintf("Buffer Addr   : 0x%p\n", Buffer);
+  kafl_hprintf("HostStaDevAddr: 0x%p\n", HostStatusDeviceAddress);
+
   Dev->VirtIo->UnmapSharedBuffer (Dev->VirtIo, StatusMapping);
 
 UnmapDataBuffer:
@@ -485,6 +495,8 @@ VirtioBlkReadBlocks (
 {
   VBLK_DEV   *Dev;
   EFI_STATUS Status;
+
+  DEBUG_FCALL;
 
   if (BufferSize == 0) {
     return EFI_SUCCESS;

@@ -283,6 +283,8 @@ VirtioFlush (
   EFI_STATUS Status;
   UINTN      PollPeriodUsecs;
 
+  // DEBUG_FCALL;
+
   //
   // virtio-0.9.5, 2.4.1.2 Updating the Available Ring
   //

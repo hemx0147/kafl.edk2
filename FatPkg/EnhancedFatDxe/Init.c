@@ -34,6 +34,8 @@ FatAllocateVolume (
   EFI_STATUS  Status;
   FAT_VOLUME  *Volume;
 
+  DEBUG_FCALL;
+
   //
   // Allocate a volume structure
   //

@@ -126,6 +126,8 @@ DiskIoDriverBindingStart (
   DISK_IO_PRIVATE_DATA  *Instance;
   EFI_TPL               OldTpl;
 
+  DEBUG_FCALL;
+
   Instance = NULL;
 
   OldTpl = gBS->RaiseTPL (TPL_CALLBACK);
@@ -491,11 +493,11 @@ DiskIoCreateSubtask (
       return NULL;
     }
   }
-  DEBUG ((
-    EFI_D_BLKIO,
-    "  %c:Lba/Offset/Length/WorkingBuffer/Buffer = %016lx/%08x/%08x/%08x/%08x\n",
-    Write ? 'W': 'R', Lba, Offset, Length, WorkingBuffer, Buffer
-    ));
+  // DEBUG ((
+  //   EFI_D_BLKIO,
+  //   "  %c:Lba/Offset/Length/WorkingBuffer/Buffer = %016lx/%08x/%08x/%08x/%08x\n",
+  //   Write ? 'W': 'R', Lba, Offset, Length, WorkingBuffer, Buffer
+  //   ));
 
   return Subtask;
 }
@@ -540,7 +542,7 @@ DiskIoCreateSubtaskList (
   VOID                  *WorkingBuffer;
   LIST_ENTRY            *Link;
 
-  DEBUG ((EFI_D_BLKIO, "DiskIo: Create subtasks for task: Offset/BufferSize/Buffer = %016lx/%08x/%08x\n", Offset, BufferSize, Buffer));
+  // DEBUG ((EFI_D_BLKIO, "DiskIo: Create subtasks for task: Offset/BufferSize/Buffer = %016lx/%08x/%08x\n", Offset, BufferSize, Buffer));
 
   BlockSize = Instance->BlockIo->Media->BlockSize;
   IoAlign   = Instance->BlockIo->Media->IoAlign;
@@ -820,6 +822,8 @@ DiskIo2ReadWriteDisk (
   BOOLEAN                SubtaskBlocking;
   LIST_ENTRY             *SubtasksPtr;
 
+  DEBUG_FCALL;
+
   Task      = NULL;
   BlockIo   = Instance->BlockIo;
   BlockIo2  = Instance->BlockIo2;
@@ -908,6 +912,7 @@ DiskIo2ReadWriteDisk (
       // Read
       //
       if (SubtaskBlocking) {
+        // kafl_hprintf("BlockIo->ReadBlocks\n");
         Status = BlockIo->ReadBlocks (
                             BlockIo,
                             MediaId,
@@ -919,6 +924,7 @@ DiskIo2ReadWriteDisk (
           CopyMem (Subtask->Buffer, Subtask->WorkingBuffer + Subtask->Offset, Subtask->Length);
         }
       } else {
+        // kafl_hprintf("BlockIo2->ReadBlocksEx\n");
         Status = BlockIo2->ReadBlocksEx (
                              BlockIo2,
                              MediaId,
@@ -1016,6 +1022,8 @@ DiskIo2ReadDiskEx (
   OUT VOID                        *Buffer
   )
 {
+  DEBUG_FCALL;
+
   return DiskIo2ReadWriteDisk (
            DISK_IO_PRIVATE_DATA_FROM_DISK_IO2 (This),
            FALSE, MediaId, Offset, Token, BufferSize, (UINT8 *) Buffer
@@ -1178,6 +1186,8 @@ DiskIoReadDisk (
   OUT VOID                 *Buffer
   )
 {
+  DEBUG_FCALL;
+
   return DiskIo2ReadWriteDisk (
            DISK_IO_PRIVATE_DATA_FROM_DISK_IO (This),
            FALSE, MediaId, Offset, NULL, BufferSize, (UINT8 *) Buffer

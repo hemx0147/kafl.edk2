@@ -94,6 +94,8 @@ NvVarsFileReadCheckup (
 {
   EFI_FILE_INFO               *FileInfo;
 
+  DEBUG_FCALL;
+
   *Exists = FALSE;
   *Size = 0;
 
@@ -188,6 +190,8 @@ FileHandleReadToNewBuffer (
   UINTN                       ActualReadSize;
   VOID                        *FileContents;
 
+  DEBUG_FCALL;
+
   ActualReadSize = ReadSize;
   FileContents = AllocatePool (ReadSize);
   if (FileContents != NULL) {
@@ -225,6 +229,8 @@ ReadNvVarsFile (
   BOOLEAN                     FileExists;
   VOID                        *FileContents;
   EFI_HANDLE                  SerializedVariables;
+
+  DEBUG_FCALL;
 
   Status = GetNvVarsFile (FsHandle, TRUE, &File);
   if (EFI_ERROR (Status)) {
@@ -316,6 +322,8 @@ LoadNvVarsFromFs (
   EFI_STATUS                     Status;
   BOOLEAN                        VarData;
   UINTN                          Size;
+
+  DEBUG_FCALL;
 
   DEBUG ((DEBUG_INFO, "FsAccess.c: LoadNvVarsFromFs\n"));
 

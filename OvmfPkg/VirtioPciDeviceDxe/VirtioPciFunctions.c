@@ -235,6 +235,8 @@ VirtioPciSetQueueNotify (
 {
   VIRTIO_PCI_DEVICE *Dev;
 
+  // DEBUG_FCALL;
+
   Dev = VIRTIO_PCI_DEVICE_FROM_VIRTIO_DEVICE (This);
 
   return VirtioPciIoWrite (Dev, VIRTIO_PCI_OFFSET_QUEUE_NOTIFY, sizeof (UINT16),

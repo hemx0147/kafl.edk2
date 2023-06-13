@@ -165,6 +165,8 @@ FileHandleRead(
   OUT VOID                      *Buffer
   )
 {
+  DEBUG_FCALL;
+
   if (FileHandle == NULL) {
     return (EFI_INVALID_PARAMETER);
   }
