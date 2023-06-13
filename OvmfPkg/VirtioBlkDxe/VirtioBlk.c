@@ -438,6 +438,14 @@ SynchronousRequest (
   kafl_hprintf("Buffer Addr   : 0x%p\n", Buffer);
   kafl_hprintf("HostStaDevAddr: 0x%p\n", HostStatusDeviceAddress);
 
+#ifdef CONFIG_KAFL_FUZZ_VIRTIO_READ
+  if (BufferSize > 0)
+  {
+    // 3 descriptors were appended to virtio ring -> inject fuzz input of size 3 * vring_descriptor
+    kafl_fuzz_buffer(&Dev->Ring, &Dev->Ring, (UINTN*)&Dev->Ring, 3 * sizeof(VRING_DESC));
+  }
+#endif
+
   Dev->VirtIo->UnmapSharedBuffer (Dev->VirtIo, StatusMapping);
 
 UnmapDataBuffer:

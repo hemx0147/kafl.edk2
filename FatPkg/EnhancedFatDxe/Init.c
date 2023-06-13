@@ -100,6 +100,10 @@ Done:
     FatFreeVolume (Volume);
   }
 
+#ifdef CONFIG_KAFL_FUZZ_VIRTIO_READ
+  kafl_fuzz_event(KAFL_DONE);
+#endif
+
   return Status;
 }
 

@@ -127,6 +127,9 @@ DiskIoDriverBindingStart (
   EFI_TPL               OldTpl;
 
   DEBUG_FCALL;
+#ifdef CONFIG_KAFL_FUZZ_VIRTIO_READ
+  kafl_fuzz_event(KAFL_ENABLE);
+#endif
 
   Instance = NULL;
 
