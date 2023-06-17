@@ -11,9 +11,9 @@
 
 /** KAFL HARNESS CONFIGURATION START **/
 // #define CONFIG_KAFL_FUZZ_BOOT_LOADER
-#define CONFIG_KAFL_FUZZ_VIRTIO_READ
+// #define CONFIG_KAFL_FUZZ_VIRTIO_READ
 // #define CONFIG_KAFL_FUZZ_BLK_DEV_INIT
-// #define CONFIG_KAFL_FUZZ_TDHOB
+#define CONFIG_KAFL_FUZZ_TDHOB
 /** KAFL HARNESS CONFIGURATION END **/
 
 // assume that we can use memory allocation functions only for targets that run later in boot process

@@ -169,7 +169,7 @@ ValidateHobList (
   HobTotalLength = 0;
 
   if (VmmHobList == NULL) {
-    DEBUG ((DEBUG_ERROR, "HOB: HOB data pointer is NULL\n"));
+    // DEBUG ((DEBUG_ERROR, "HOB: HOB data pointer is NULL\n"));
     return FALSE;
   }
 
@@ -181,24 +181,24 @@ ValidateHobList (
   while (!END_OF_HOB_LIST (Hob)) {
     HobTotalLength += Hob.Header->HobLength;
     if (HobTotalLength > HobMemorySize) {
-      DEBUG ((DEBUG_ERROR, "HOB overflowed: Total Hob length should be less than the memory size reserved fr TD HOB \n"));
+      // DEBUG ((DEBUG_ERROR, "HOB overflowed: Total Hob length should be less than the memory size reserved fr TD HOB \n"));
       return FALSE;
     }
 
     if (Hob.Header->Reserved != (UINT32) 0) {
-      DEBUG ((DEBUG_ERROR, "HOB: Hob header Reserved filed should be zero\n"));
+      // DEBUG ((DEBUG_ERROR, "HOB: Hob header Reserved filed should be zero\n"));
       return FALSE;
     }
 
     if (Hob.Header->HobLength == 0) {
-        DEBUG ((DEBUG_ERROR, "HOB: Hob header LEANGTH should not be zero\n"));
+        // DEBUG ((DEBUG_ERROR, "HOB: Hob header LEANGTH should not be zero\n"));
         return FALSE;
     }
 
     switch (Hob.Header->HobType) {
       case EFI_HOB_TYPE_HANDOFF:
         if (Hob.Header->HobLength != sizeof(EFI_HOB_HANDOFF_INFO_TABLE)) {
-          DEBUG ((DEBUG_ERROR, "HOB: Hob length is not equal corresponding hob structure. Type: 0x%04x\n", EFI_HOB_TYPE_HANDOFF));
+          // DEBUG ((DEBUG_ERROR, "HOB: Hob length is not equal corresponding hob structure. Type: 0x%04x\n", EFI_HOB_TYPE_HANDOFF));
           return FALSE;
         }
 
@@ -221,30 +221,30 @@ ValidateHobList (
           case BOOT_IN_RECOVERY_MODE:
             break;
           default:
-            DEBUG ((DEBUG_ERROR, "HOB: Unknow HandoffInformationTable BootMode type. Type: 0x%08x\n", Hob.HandoffInformationTable->BootMode));
+            // DEBUG ((DEBUG_ERROR, "HOB: Unknow HandoffInformationTable BootMode type. Type: 0x%08x\n", Hob.HandoffInformationTable->BootMode));
             return FALSE;
         }
 
         if ((Hob.HandoffInformationTable->EfiFreeMemoryTop % 4096) != 0) {
-          DEBUG ((DEBUG_ERROR, "HOB: HandoffInformationTable EfiFreeMemoryTop address must be 4-KB aligned to meet page restrictions of UEFI.\
-                               Address: 0x%016lx\n", Hob.HandoffInformationTable->EfiFreeMemoryTop));
+          // DEBUG ((DEBUG_ERROR, "HOB: HandoffInformationTable EfiFreeMemoryTop address must be 4-KB aligned to meet page restrictions of UEFI.
+                              //  Address: 0x%016lx\n", Hob.HandoffInformationTable->EfiFreeMemoryTop));
           return FALSE;
         }
 
         break;
       case EFI_HOB_TYPE_RESOURCE_DESCRIPTOR:
         if (Hob.Header->HobLength != sizeof(EFI_HOB_RESOURCE_DESCRIPTOR)) {
-          DEBUG ((DEBUG_ERROR, "HOB: Hob length is not equal corresponding hob structure. Type: 0x%04x\n", EFI_HOB_TYPE_RESOURCE_DESCRIPTOR));
+          // DEBUG ((DEBUG_ERROR, "HOB: Hob length is not equal corresponding hob structure. Type: 0x%04x\n", EFI_HOB_TYPE_RESOURCE_DESCRIPTOR));
           return FALSE;
         }
 
         if (Hob.ResourceDescriptor->ResourceType >= EFI_RESOURCE_MAX_MEMORY_TYPE) {
-          DEBUG ((DEBUG_ERROR, "HOB: Unknow ResourceDescriptor ResourceType type. Type: 0x%08x\n", Hob.ResourceDescriptor->ResourceType));
+          // DEBUG ((DEBUG_ERROR, "HOB: Unknow ResourceDescriptor ResourceType type. Type: 0x%08x\n", Hob.ResourceDescriptor->ResourceType));
           return FALSE;
         }
 
         if (!ValidateResourceHobRange(VmmHobList, Hob.ResourceDescriptor)) {
-          DEBUG ((DEBUG_ERROR, "HOB: ResourceDescriptor Resource Range error.\n"));
+          // DEBUG ((DEBUG_ERROR, "HOB: ResourceDescriptor Resource Range error.\n"));
           return FALSE;
         }
 
@@ -275,7 +275,7 @@ ValidateHobList (
                                                           EFI_RESOURCE_ATTRIBUTE_READ_ONLY_PROTECTABLE |
                                                           EFI_RESOURCE_ATTRIBUTE_MORE_RELIABLE |
                                                           EFI_RESOURCE_ATTRIBUTE_ENCRYPTED))) != 0) {
-          DEBUG ((DEBUG_ERROR, "HOB: Unknow ResourceDescriptor ResourceAttribute type. Type: 0x%08x\n", Hob.ResourceDescriptor->ResourceAttribute));
+          // DEBUG ((DEBUG_ERROR, "HOB: Unknow ResourceDescriptor ResourceAttribute type. Type: 0x%08x\n", Hob.ResourceDescriptor->ResourceAttribute));
           return FALSE;
         }
         break;
@@ -284,37 +284,37 @@ ValidateHobList (
         break;
       case EFI_HOB_TYPE_FV:
         if (Hob.Header->HobLength != sizeof (EFI_HOB_FIRMWARE_VOLUME)) {
-          DEBUG ((DEBUG_ERROR, "HOB: Hob length is not equal corresponding hob structure. Type: 0x%04x\n", EFI_HOB_TYPE_FV));
+          // DEBUG ((DEBUG_ERROR, "HOB: Hob length is not equal corresponding hob structure. Type: 0x%04x\n", EFI_HOB_TYPE_FV));
           return FALSE;
         }
         break;
       case EFI_HOB_TYPE_FV2:
         if (Hob.Header->HobLength != sizeof(EFI_HOB_FIRMWARE_VOLUME2)) {
-          DEBUG ((DEBUG_ERROR, "HOB: Hob length is not equal corresponding hob structure. Type: 0x%04x\n", EFI_HOB_TYPE_FV2));
+          // DEBUG ((DEBUG_ERROR, "HOB: Hob length is not equal corresponding hob structure. Type: 0x%04x\n", EFI_HOB_TYPE_FV2));
           return FALSE;
         }
         break;
       case EFI_HOB_TYPE_FV3:
         if (Hob.Header->HobLength != sizeof(EFI_HOB_FIRMWARE_VOLUME3)) {
-          DEBUG ((DEBUG_ERROR, "HOB: Hob length is not equal corresponding hob structure. Type: 0x%04x\n", EFI_HOB_TYPE_FV3));
+          // DEBUG ((DEBUG_ERROR, "HOB: Hob length is not equal corresponding hob structure. Type: 0x%04x\n", EFI_HOB_TYPE_FV3));
           return FALSE;
         }
         break;
       case EFI_HOB_TYPE_CPU:
         if (Hob.Header->HobLength != sizeof(EFI_HOB_CPU)) {
-          DEBUG ((DEBUG_ERROR, "HOB: Hob length is not equal corresponding hob structure. Type: 0x%04x\n", EFI_HOB_TYPE_CPU));
+          // DEBUG ((DEBUG_ERROR, "HOB: Hob length is not equal corresponding hob structure. Type: 0x%04x\n", EFI_HOB_TYPE_CPU));
           return FALSE;
         }
 
         for (UINT32 index = 0; index < 6; index ++) {
           if (Hob.Cpu->Reserved[index] != 0) {
-            DEBUG ((DEBUG_ERROR, "HOB: Cpu Reserved field will always be set to zero.\n"));
+            // DEBUG ((DEBUG_ERROR, "HOB: Cpu Reserved field will always be set to zero.\n"));
             return FALSE;
           }
         }
         break;
       default:
-        DEBUG ((DEBUG_ERROR, "HOB: Hob type is not know. Type: 0x%04x\n", Hob.Header->HobType));
+        // DEBUG ((DEBUG_ERROR, "HOB: Hob type is not know. Type: 0x%04x\n", Hob.Header->HobType));
         return FALSE;
     }
     // Get next HOB
@@ -352,7 +352,7 @@ GetSystemMemoryEndAddress (
     Hob.Raw = GET_NEXT_HOB (Hob);
   }
 
-  DEBUG ((DEBUG_INFO, "System memory end address = 0x%llx\n", PhysicalEnd));
+  // DEBUG ((DEBUG_INFO, "System memory end address = 0x%llx\n", PhysicalEnd));
   return PhysicalEnd;
 }
 
@@ -397,7 +397,7 @@ ProcessHobList (
   LowMemoryLength = 0;
 
   mTdxAcceptMemSize = GetAcceptSize ();
-  DEBUG ((DEBUG_INFO, "mTdxAcceptMemSize: 0x%llx\n", mTdxAcceptMemSize));
+  // DEBUG ((DEBUG_INFO, "mTdxAcceptMemSize: 0x%llx\n", mTdxAcceptMemSize));
 
   //
   // Parse the HOB list until end of list or matching type is found.
@@ -405,7 +405,7 @@ ProcessHobList (
   while (!END_OF_HOB_LIST (Hob) && AccumulateAccepted < mTdxAcceptMemSize) {
     switch (Hob.Header->HobType) {
       case EFI_HOB_TYPE_RESOURCE_DESCRIPTOR:
-        DEBUG ((DEBUG_INFO, "\nResourceType: 0x%x\n", Hob.ResourceDescriptor->ResourceType));
+        // DEBUG ((DEBUG_INFO, "\nResourceType: 0x%x\n", Hob.ResourceDescriptor->ResourceType));
 
         //
         // FixMe:
@@ -417,10 +417,10 @@ ProcessHobList (
         //
         if (Hob.ResourceDescriptor->ResourceType == EFI_RESOURCE_SYSTEM_MEMORY) {
 
-          DEBUG ((DEBUG_INFO, "ResourceAttribute: 0x%x\n", Hob.ResourceDescriptor->ResourceAttribute));
-          DEBUG ((DEBUG_INFO, "PhysicalStart: 0x%llx\n", Hob.ResourceDescriptor->PhysicalStart));
-          DEBUG ((DEBUG_INFO, "ResourceLength: 0x%llx\n", Hob.ResourceDescriptor->ResourceLength));
-          DEBUG ((DEBUG_INFO, "Owner: %g\n\n", &Hob.ResourceDescriptor->Owner));
+          // DEBUG ((DEBUG_INFO, "ResourceAttribute: 0x%x\n", Hob.ResourceDescriptor->ResourceAttribute));
+          // DEBUG ((DEBUG_INFO, "PhysicalStart: 0x%llx\n", Hob.ResourceDescriptor->PhysicalStart));
+          // DEBUG ((DEBUG_INFO, "ResourceLength: 0x%llx\n", Hob.ResourceDescriptor->ResourceLength));
+          // DEBUG ((DEBUG_INFO, "Owner: %g\n\n", &Hob.ResourceDescriptor->Owner));
 
           PhysicalEnd = Hob.ResourceDescriptor->PhysicalStart + Hob.ResourceDescriptor->ResourceLength;
           ResourceLength = Hob.ResourceDescriptor->ResourceLength;
@@ -440,7 +440,7 @@ ProcessHobList (
             }
           }
 
-          DEBUG ((DEBUG_INFO, "Accept Start and End: %x, %x\n", Hob.ResourceDescriptor->PhysicalStart, PhysicalEnd));
+          // DEBUG ((DEBUG_INFO, "Accept Start and End: %x, %x\n", Hob.ResourceDescriptor->PhysicalStart, PhysicalEnd));
           Status = MpAcceptMemoryResourceRange (
               Hob.ResourceDescriptor->PhysicalStart,
               PhysicalEnd);
@@ -474,7 +474,7 @@ ProcessHobList (
     LowMemoryLength -= EFI_PAGE_SIZE;
   }
 
-  DEBUG ((DEBUG_INFO, "LowMemory Start and End: %x, %x\n", LowMemoryStart, LowMemoryStart + LowMemoryLength));
+  // DEBUG ((DEBUG_INFO, "LowMemory Start and End: %x, %x\n", LowMemoryStart, LowMemoryStart + LowMemoryLength));
   HobConstructor (
     (VOID *) LowMemoryStart,
     LowMemoryLength,

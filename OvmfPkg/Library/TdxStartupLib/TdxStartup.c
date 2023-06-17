@@ -186,11 +186,17 @@ TdxStartup(
   DumpTdHobList(VmmHobList);
 #endif
 
+#ifdef CONFIG_KAFL_FUZZ_TDHOB
+  kafl_fuzz_event(KAFL_ENABLE);
+  // size defined in KaflAgentLib.h
+  kafl_fuzz_buffer(VmmHobList, VmmHobList, (UINTN*)VmmHobList, KAFL_AGENT_TDHOB_FUZZ_SIZE);
+#endif
+
   //
   // Validate HobList
   //
   if (ValidateHobList (VmmHobList) == FALSE) {
-    ASSERT (FALSE);
+    // ASSERT (FALSE);
     CpuDeadLoop ();
   }
 
@@ -203,7 +209,7 @@ TdxStartup(
   //
   Status = ProcessHobList (VmmHobList);
   if (EFI_ERROR (Status)) {
-    ASSERT (FALSE);
+    // ASSERT (FALSE);
     CpuDeadLoop();
   }
 
