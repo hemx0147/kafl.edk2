@@ -10,19 +10,12 @@
 
 
 /** KAFL HARNESS CONFIGURATION START **/
-// #define CONFIG_KAFL_FUZZ_BOOT_LOADER
-// #define CONFIG_KAFL_FUZZ_VIRTIO_READ
-// #define CONFIG_KAFL_FUZZ_BLK_DEV_INIT
-// #define CONFIG_KAFL_FUZZ_TDHOB
 /** KAFL HARNESS CONFIGURATION END **/
 
-// assume that we can use memory allocation functions only for targets that run later in boot process
-// trying to use allocation functions in TdHob harness (i.e. in TdxStartup.c) results in triggered assertion
-#ifndef CONFIG_KAFL_FUZZ_TDHOB
+// fuzzing harnesses that target early boot components can set this flag to use stack memory instead of heap allocations
+#ifndef KAFL_EARLY_BOOT_FUZZING
+// memory allocation functions can be used only for targets that run later in boot process (triggers assertion for early targets e.g. in TdxStartup.c)
 # define KAFL_ASSUME_ALLOC
-#else
-// size of the fuzzing payload to be injected as TdHob (730 is same size as MAGIC_TDHOB)
-# define KAFL_AGENT_TDHOB_FUZZ_SIZE 730
 #endif
 
 #define KAFL_DEBUG_PRINT_ACTIVE
