@@ -13,12 +13,13 @@
 // #define CONFIG_KAFL_FUZZ_BOOT_LOADER
 // #define CONFIG_KAFL_FUZZ_VIRTIO_READ
 // #define CONFIG_KAFL_FUZZ_BLK_DEV_INIT
-#define CONFIG_KAFL_FUZZ_TDHOB
+// #define CONFIG_KAFL_FUZZ_TDHOB
+#define CONFIG_KAFL_FUZZ_DUMMY
 /** KAFL HARNESS CONFIGURATION END **/
 
 // assume that we can use memory allocation functions only for targets that run later in boot process
 // trying to use allocation functions in TdHob harness (i.e. in TdxStartup.c) results in triggered assertion
-#ifndef CONFIG_KAFL_FUZZ_TDHOB
+#if !defined(CONFIG_KAFL_FUZZ_TDHOB) && !defined(CONFIG_KAFL_FUZZ_DUMMY)
 # define KAFL_ASSUME_ALLOC
 #else
 // size of the fuzzing payload to be injected as TdHob (730 is same size as MAGIC_TDHOB)

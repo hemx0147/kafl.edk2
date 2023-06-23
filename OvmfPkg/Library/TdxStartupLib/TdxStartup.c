@@ -172,6 +172,13 @@ TdxStartup(
   ));
 #endif
 
+#ifdef CONFIG_KAFL_FUZZ_DUMMY
+  kafl_hprintf("PlatformInfoHob Size: %d\n", sizeof(PlatformInfoHob));
+  kafl_fuzz_event(KAFL_ENABLE);
+  kafl_fuzz_buffer(&PlatformInfoHob, &PlatformInfoHob, (UINTN*)&PlatformInfoHob, sizeof(PlatformInfoHob));
+  kafl_fuzz_event(KAFL_DONE);
+#endif
+
   ZeroMem (&PlatformInfoHob, sizeof (PlatformInfoHob));
 
 #ifndef CONFIG_KAFL_FUZZ_TDHOB
