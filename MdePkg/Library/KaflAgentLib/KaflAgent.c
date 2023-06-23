@@ -342,8 +342,6 @@ UINTN
 EFIAPI
 internal_fuzz_buffer (
   IN  VOID                    *fuzz_buf,
-  IN  CONST VOID              *orig_buf,
-  IN  CONST UINTN             *addr,
   IN  CONST UINTN             num_bytes,
   IN  OUT  agent_state_t *agent_state
   )

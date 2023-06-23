@@ -24,8 +24,6 @@ UINTN
 EFIAPI
 kafl_fuzz_buffer (
   IN  VOID                    *fuzz_buf,
-  IN  CONST VOID              *orig_buf,
-  IN  CONST UINTN             *addr,
   IN  CONST UINTN             num_bytes
   )
 {
@@ -34,7 +32,7 @@ kafl_fuzz_buffer (
   debug_print("kAFL %a\n", __FUNCTION__);
 
   update_local_state();
-  RequestedBytes = internal_fuzz_buffer(fuzz_buf, orig_buf, addr, num_bytes, &agent_state);
+  RequestedBytes = internal_fuzz_buffer(fuzz_buf, num_bytes, &agent_state);
   update_global_state();
   return RequestedBytes;
 }
