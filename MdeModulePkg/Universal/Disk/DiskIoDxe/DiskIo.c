@@ -126,7 +126,7 @@ DiskIoDriverBindingStart (
   DISK_IO_PRIVATE_DATA  *Instance;
   EFI_TPL               OldTpl;
 
-#ifdef CONFIG_KAFL_FUZZ_VIRTIO_READ
+#ifdef CONFIG_KAFL_FUZZ_FS_INIT
   kafl_fuzz_event(KAFL_ENABLE);
 #endif
 
