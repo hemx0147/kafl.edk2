@@ -175,7 +175,7 @@ TdxStartup(
 #ifdef CONFIG_KAFL_FUZZ_DUMMY
   kafl_hprintf("PlatformInfoHob Size: %d\n", sizeof(PlatformInfoHob));
   kafl_fuzz_event(KAFL_ENABLE);
-  kafl_fuzz_buffer(&PlatformInfoHob, &PlatformInfoHob, (UINTN*)&PlatformInfoHob, sizeof(PlatformInfoHob));
+  kafl_fuzz_buffer(&PlatformInfoHob, sizeof(PlatformInfoHob));
   kafl_fuzz_event(KAFL_DONE);
 #endif
 
@@ -196,7 +196,7 @@ TdxStartup(
 #ifdef CONFIG_KAFL_FUZZ_TDHOB
   kafl_fuzz_event(KAFL_ENABLE);
   // size defined in KaflAgentLib.h
-  kafl_fuzz_buffer(VmmHobList, VmmHobList, (UINTN*)VmmHobList, KAFL_AGENT_TDHOB_FUZZ_SIZE);
+  kafl_fuzz_buffer(VmmHobList, KAFL_AGENT_TDHOB_FUZZ_SIZE);
 #endif
 
   //

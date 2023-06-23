@@ -128,7 +128,7 @@ VirtioPciIoRead (
                      );
 
 #ifdef CONFIG_KAFL_FUZZ_BLK_DEV_INIT
-  kafl_fuzz_buffer(Buffer, Buffer, (UINTN*) Buffer, BufferSize);
+  kafl_fuzz_buffer(Buffer, BufferSize);
 #endif
 
   return Status;

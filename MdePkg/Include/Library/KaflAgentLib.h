@@ -17,13 +17,20 @@
 #define CONFIG_KAFL_FUZZ_DUMMY
 /** KAFL HARNESS CONFIGURATION END **/
 
-// assume that we can use memory allocation functions only for targets that run later in boot process
-// trying to use allocation functions in TdHob harness (i.e. in TdxStartup.c) results in triggered assertion
-#if !defined(CONFIG_KAFL_FUZZ_TDHOB) && !defined(CONFIG_KAFL_FUZZ_DUMMY)
-# define KAFL_ASSUME_ALLOC
-#else
+#ifdef CONFIG_KAFL_FUZZ_TDHOB
+# define KAFL_EARLY_BOOT_FUZZING
 // size of the fuzzing payload to be injected as TdHob (730 is same size as MAGIC_TDHOB)
 # define KAFL_AGENT_TDHOB_FUZZ_SIZE 730
+#endif
+
+#ifdef CONFIG_KAFL_FUZZ_DUMMY
+# define KAFL_EARLY_BOOT_FUZZING
+#endif
+
+// fuzzing harnesses that target early boot components can set this flag to use stack memory instead of heap allocations
+#ifndef KAFL_EARLY_BOOT_FUZZING
+// memory allocation functions can be used only for targets that run later in boot process (triggers assertion for early targets e.g. in TdxStartup.c)
+# define KAFL_ASSUME_ALLOC
 #endif
 
 // #define KAFL_DEBUG_PRINT_ACTIVE
@@ -40,36 +47,23 @@ STATIC VOID **gKaflAgentStatePtrAddr __attribute__((used)) = (VOID**) KAFL_AGENT
 enum kafl_event {
   KAFL_ENABLE,
   KAFL_START,
-  KAFL_ABORT,
-  KAFL_SETCR3,
   KAFL_DONE,
   KAFL_PANIC,
-  KAFL_KASAN,
-  KAFL_UBSAN,
-  KAFL_HALT,
-  KAFL_REBOOT,
-  KAFL_SAFE_HALT,
-  KAFL_TIMEOUT,
-  KAFL_ERROR,
-  KAFL_PAUSE,
-  KAFL_RESUME,
-  KAFL_TRACE,
+  KAFL_ABORT,
   KAFL_EVENT_MAX
 };
 
 VOID
 EFIAPI
 kafl_fuzz_event (
-  IN  enum kafl_event  e
+  IN  enum kafl_event  event
 );
 
 UINTN
 EFIAPI
 kafl_fuzz_buffer (
-  IN  OUT   VOID                *fuzz_buf,
-  IN  CONST VOID                *orig_buf,
-  IN  CONST UINTN               *addr,
-  IN  CONST UINTN               num_bytes
+  IN OUT  VOID          *fuzz_buf,
+  IN      CONST UINTN   num_bytes
 );
 
 VOID

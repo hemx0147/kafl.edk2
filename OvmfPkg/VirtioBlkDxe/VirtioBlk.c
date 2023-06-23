@@ -432,7 +432,7 @@ SynchronousRequest (
   if (BufferSize > 0)
   {
     // 3 descriptors were appended to virtio ring -> inject fuzz input of size 3 * vring_descriptor
-    kafl_fuzz_buffer(&Dev->Ring, &Dev->Ring, (UINTN*)&Dev->Ring, 3 * sizeof(VRING_DESC));
+    kafl_fuzz_buffer(&Dev->Ring, 3 * sizeof(VRING_DESC));
   }
 #endif
 

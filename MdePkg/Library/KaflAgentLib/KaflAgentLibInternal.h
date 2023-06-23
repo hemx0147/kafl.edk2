@@ -30,12 +30,6 @@ kafl_raise_panic (
 
 VOID
 EFIAPI
-kafl_raise_kasan (
-  VOID
-);
-
-VOID
-EFIAPI
 kafl_habort (
   IN  CHAR8   *Msg
 );
@@ -55,18 +49,16 @@ internal_show_state (
 UINTN
 EFIAPI
 internal_fuzz_buffer (
-  IN  VOID                    *fuzz_buf,
-  IN  CONST VOID              *orig_buf,
-  IN  CONST UINTN             *addr,
-  IN  CONST UINTN             num_bytes,
-  IN  OUT  agent_state_t      *agent_state
+  IN  VOID            *fuzz_buf,
+  IN  CONST UINTN     num_bytes,
+  IN  agent_state_t   *agent_state
 );
 
 VOID
 EFIAPI
 internal_fuzz_event (
-  IN  enum kafl_event  e,
-  IN  OUT  agent_state_t *agent_state
+  IN  enum kafl_event   event,
+  IN  agent_state_t     *agent_state
 );
 
 /**
