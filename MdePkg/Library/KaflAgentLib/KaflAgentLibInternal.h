@@ -30,12 +30,6 @@ kafl_raise_panic (
 
 VOID
 EFIAPI
-kafl_raise_kasan (
-  VOID
-);
-
-VOID
-EFIAPI
 kafl_habort (
   IN  CHAR8   *Msg
 );

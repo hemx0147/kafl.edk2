@@ -29,20 +29,9 @@
 CONST CHAR8 *kafl_event_name[KAFL_EVENT_MAX] = {
   "KAFL_ENABLE",
   "KAFL_START",
-  "KAFL_ABORT",
-  "KAFL_SETCR3",
   "KAFL_DONE",
   "KAFL_PANIC",
-  "KAFL_KASAN",
-  "KAFL_UBSAN",
-  "KAFL_HALT",
-  "KAFL_REBOOT",
-  "KAFL_SAFE_HALT",
-  "KAFL_TIMEOUT",
-  "KAFL_ERROR",
-  "KAFL_PAUSE",
-  "KAFL_RESUME",
-  "KAFL_TRACE",
+  "KAFL_ABORT"
 };
 
 VOID
@@ -52,15 +41,6 @@ kafl_raise_panic (
   )
 {
   kAFL_hypercall(HYPERCALL_KAFL_PANIC, 0);
-}
-
-VOID
-EFIAPI
-kafl_raise_kasan (
-  VOID
-  )
-{
-  kAFL_hypercall(HYPERCALL_KAFL_KASAN, 0);
 }
 
 VOID
@@ -413,8 +393,6 @@ internal_fuzz_event (
       return;
     case KAFL_ENABLE:
       pr_warn("[*] Agent enable!\n");
-      /* fallthrough */
-    case KAFL_RESUME:
       agent_state->fuzz_enabled = TRUE;
       return;
     case KAFL_DONE:
@@ -435,16 +413,8 @@ internal_fuzz_event (
   // Use this table to selectively raise error conditions
   switch(e)
   {
-    case KAFL_KASAN:
-    case KAFL_UBSAN:
-      return kafl_raise_kasan();
     case KAFL_PANIC:
-    case KAFL_ERROR:
-    case KAFL_HALT:
-    case KAFL_REBOOT:
       return kafl_raise_panic();
-    case KAFL_TIMEOUT:
-      return kafl_habort("TODO: add a timeout handler?!\n");
     default:
       return kafl_habort("Unrecognized fuzz event.\n");
   }
