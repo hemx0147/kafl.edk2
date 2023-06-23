@@ -41,14 +41,14 @@ enum kafl_event {
 VOID
 EFIAPI
 kafl_fuzz_event (
-  IN  enum kafl_event  e
+  IN  enum kafl_event  event
 );
 
 UINTN
 EFIAPI
 kafl_fuzz_buffer (
-  IN  OUT   VOID                *fuzz_buf,
-  IN  CONST UINTN               num_bytes
+  IN OUT  VOID          *fuzz_buf,
+  IN      CONST UINTN   num_bytes
 );
 
 VOID

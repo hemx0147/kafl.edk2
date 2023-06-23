@@ -23,8 +23,8 @@ agent_state_t agent_state = {
 UINTN
 EFIAPI
 kafl_fuzz_buffer (
-  IN  VOID                    *fuzz_buf,
-  IN  CONST UINTN             num_bytes
+  IN  VOID          *fuzz_buf,
+  IN  CONST UINTN   num_bytes
   )
 {
   UINTN RequestedBytes = 0;
@@ -40,13 +40,13 @@ kafl_fuzz_buffer (
 VOID
 EFIAPI
 kafl_fuzz_event (
-  IN  enum kafl_event  e
+  IN  enum kafl_event   event
   )
 {
   debug_print("kAFL %a\n", __FUNCTION__);
 
   update_local_state();
-  internal_fuzz_event(e, &agent_state);
+  internal_fuzz_event(event, &agent_state);
   update_global_state();
 }
 

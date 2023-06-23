@@ -21,11 +21,6 @@
 //
 #define MAX_DEBUG_MESSAGE_LENGTH  0x100
 
-// abort at end of payload - otherwise we keep feeding unmodified input
-// which means we see coverage that is not represented in the payload
-// agent_state.exit_at_eof = TRUE;
-
-
 CONST CHAR8 *kafl_event_name[KAFL_EVENT_MAX] = {
   "KAFL_ENABLE",
   "KAFL_START",
@@ -168,7 +163,7 @@ STATIC
 VOID
 EFIAPI
 kafl_agent_init (
-  IN  OUT agent_state_t   *agent_state
+  IN  agent_state_t   *agent_state
   )
 {
   UINT8 *ve_buf;
@@ -308,9 +303,9 @@ STATIC
 UINTN
 EFIAPI
 _internal_fuzz_buffer (
-  IN      VOID          *buf,
-  IN OUT  CONST UINTN   num_bytes,
-  IN OUT  agent_state_t *agent_state
+  IN      VOID            *buf,
+  IN OUT  CONST UINTN     num_bytes,
+  IN      agent_state_t   *agent_state
   )
 {
   UINT8 *ve_buf = agent_state->ve_buf;
@@ -328,7 +323,6 @@ _internal_fuzz_buffer (
     agent_state->ve_mis = ve_mis;
     debug_print("kAFL %a: insufficient FuzBuf. ve_mis: %d\n", __FUNCTION__, ve_mis);
     kafl_agent_done(agent_state);
-    /* no return */
   }
 
   CopyMem(buf, ve_buf + ve_pos, num_bytes);
@@ -341,9 +335,9 @@ _internal_fuzz_buffer (
 UINTN
 EFIAPI
 internal_fuzz_buffer (
-  IN  VOID                    *fuzz_buf,
-  IN  CONST UINTN             num_bytes,
-  IN  OUT  agent_state_t *agent_state
+  IN  VOID            *fuzz_buf,
+  IN  CONST UINTN     num_bytes,
+  IN  agent_state_t   *agent_state
   )
 {
   UINTN num_fuzzed = 0;
@@ -377,11 +371,11 @@ internal_fuzz_buffer (
 VOID
 EFIAPI
 internal_fuzz_event (
-  IN  enum kafl_event  e,
-  IN  OUT  agent_state_t *agent_state
+  IN  enum kafl_event   event,
+  IN  agent_state_t     *agent_state
   )
 {
-  switch(e)
+  switch(event)
   {
     case KAFL_START:
       pr_warn("[*] Agent start!\n");
@@ -403,13 +397,13 @@ internal_fuzz_event (
 
   if (!agent_state->agent_initialized)
   {
-    pr_warn("Got event %s but not initialized?!\n", kafl_event_name[e]);
+    pr_warn("Got event %s but not initialized?!\n", kafl_event_name[event]);
     return;
   }
 
   // post-init actions - abort if we see these before FuzzInitialized=TRUE
   // Use this table to selectively raise error conditions
-  switch(e)
+  switch(event)
   {
     case KAFL_PANIC:
       return kafl_raise_panic();
